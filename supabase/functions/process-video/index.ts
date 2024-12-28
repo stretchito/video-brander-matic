@@ -6,6 +6,8 @@ import { createSupabaseClient, getSignedUrl, uploadProcessedVideo, updateJobStat
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 interface ProcessVideoPayload {
@@ -20,7 +22,25 @@ interface ProcessVideoPayload {
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Max-Age': '86400',
+      }
+    });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { 
+        status: 405,
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   }
 
   try {
@@ -83,11 +103,15 @@ Deno.serve(async (req) => {
       console.log('Video processing completed successfully');
 
       return new Response(
-        JSON.stringify({ success: true, message: 'Video processed successfully' }),
+        JSON.stringify({ 
+          success: true, 
+          message: 'Video processed successfully',
+          outputPath 
+        }),
         { 
           headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
           } 
         }
       );
@@ -101,12 +125,15 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        stack: error.stack 
+      }),
       { 
-        status: 400,
+        status: 500,
         headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
         }
       }
     );
