@@ -22,7 +22,8 @@ interface ProcessVideoPayload {
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
+    return new Response('OK', {
+      status: 200,
       headers: corsHeaders
     });
   }
@@ -45,7 +46,11 @@ Deno.serve(async (req) => {
   try {
     console.log('Starting video processing request');
     const supabaseClient = createSupabaseClient();
+
+    // Parse request body
     const payload: ProcessVideoPayload = await req.json();
+    console.log('Received payload:', JSON.stringify(payload));
+    
     const { jobId, videoPath, logoPath, position, greyscale, outputFormat } = payload;
 
     console.log('Processing job:', jobId, 'with video:', videoPath);
@@ -129,7 +134,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         error: error.message,
         stack: error.stack,
-        type: error.name 
+        type: error.name,
+        details: 'An error occurred during video processing'
       }),
       { 
         status: 500,
