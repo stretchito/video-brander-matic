@@ -84,7 +84,12 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true, message: 'Video processed successfully' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       );
 
     } catch (error) {
@@ -99,7 +104,10 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: error.message }),
       { 
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }
       }
     );
   }
