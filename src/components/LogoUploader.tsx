@@ -1,56 +1,22 @@
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Image } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface LogoUploaderProps {
   onLogoSelect: (file: File, path: string) => void;
 }
 
 const LogoUploader = ({ onLogoSelect }: LogoUploaderProps) => {
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [currentFile, setCurrentFile] = useState<string | null>(null);
-
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file && file.type.startsWith('image/')) {
-      try {
-        setUploadProgress(0);
-        const fileExt = file.name.split('.').pop();
-        const userId = (await supabase.auth.getUser()).data.user?.id;
-        const filePath = `${userId}/${crypto.randomUUID()}.${fileExt}`;
-
-        // Create upload task
-        const uploadTask = supabase.storage
-          .from('logos')
-          .upload(filePath, file);
-
-        // Start upload and set initial progress
-        setUploadProgress(10);
-        const { error: uploadError } = await uploadTask;
-
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        setCurrentFile(file.name);
-        onLogoSelect(file, filePath);
-        toast.success('Logo uploaded successfully');
-        setUploadProgress(100);
-      } catch (error) {
-        console.error('Upload error:', error);
-        toast.error('Error uploading logo');
-        setUploadProgress(0);
-      }
-    } else {
-      toast.error('Please upload a valid image file');
-    }
-  }, [onLogoSelect]);
+  const { uploadProgress, currentFile, handleUpload } = useFileUpload({
+    bucket: 'logos',
+    fileTypes: ['image'],
+    onSuccess: onLogoSelect
+  });
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
+    onDrop: handleUpload,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif']
     },
