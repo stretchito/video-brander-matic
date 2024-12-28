@@ -2,17 +2,35 @@ import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Image } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LogoUploaderProps {
-  onLogoSelect: (file: File) => void;
+  onLogoSelect: (file: File, path: string) => void;
 }
 
 const LogoUploader = ({ onLogoSelect }: LogoUploaderProps) => {
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file && file.type.startsWith('image/')) {
-      onLogoSelect(file);
-      toast.success('Logo uploaded successfully');
+      try {
+        const fileExt = file.name.split('.').pop();
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        const filePath = `${userId}/${crypto.randomUUID()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('logos')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        onLogoSelect(file, filePath);
+        toast.success('Logo uploaded successfully');
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error('Error uploading logo');
+      }
     } else {
       toast.error('Please upload a valid image file');
     }

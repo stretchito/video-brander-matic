@@ -2,17 +2,35 @@ import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VideoUploaderProps {
-  onVideoSelect: (file: File) => void;
+  onVideoSelect: (file: File, path: string) => void;
 }
 
 const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file && file.type.startsWith('video/')) {
-      onVideoSelect(file);
-      toast.success('Video uploaded successfully');
+      try {
+        const fileExt = file.name.split('.').pop();
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        const filePath = `${userId}/${crypto.randomUUID()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('videos')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        onVideoSelect(file, filePath);
+        toast.success('Video uploaded successfully');
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error('Error uploading video');
+      }
     } else {
       toast.error('Please upload a valid video file');
     }
