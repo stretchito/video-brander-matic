@@ -1,0 +1,6 @@
+project_id = "nplzycozwaxjsblxoddd"
+[functions.process-video]
+verify_jwt = false
+import_map = [
+  "@ffmpeg/ffmpeg@0.12.7"
+]

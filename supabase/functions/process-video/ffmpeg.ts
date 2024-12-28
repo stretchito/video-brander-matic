@@ -1,3 +1,5 @@
+import { createFFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7';
+
 export interface ProcessVideoOptions {
   inputPath: string;
   logoPath: string;
@@ -15,57 +17,67 @@ export async function processVideo({
   greyscale,
   outputFormat
 }: ProcessVideoOptions) {
-  const ffmpegArgs = [];
-  
-  // Base input
-  ffmpegArgs.push('-i', inputPath);
-  ffmpegArgs.push('-i', logoPath);
-  
-  // Set filter complex based on position and greyscale
+  const ffmpeg = createFFmpeg({ log: true });
+  await ffmpeg.load();
+
+  // Read input files
+  const videoData = await Deno.readFile(inputPath);
+  const logoData = await Deno.readFile(logoPath);
+
+  // Write files to FFMPEG's virtual filesystem
+  ffmpeg.FS('writeFile', 'input.mp4', videoData);
+  ffmpeg.FS('writeFile', 'logo.png', logoData);
+
+  // Prepare filter complex based on options
   let filterComplex = '';
   
-  // Apply greyscale if needed
-  if (greyscale) {
-    filterComplex += '[0:v]split=2[color][gray];[gray]colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3[grayscale];';
-  }
-  
-  // Position the logo
+  // Position mapping
   const logoPosition = {
     'top-left': '10:10',
     'top-right': 'main_w-overlay_w-10:10',
     'bottom': '(main_w-overlay_w)/2:main_h-overlay_h-10',
     'center': '(main_w-overlay_w)/2:(main_h-overlay_h)/2'
   }[position];
-  
-  // Complete the filter complex
+
+  // Build filter complex string
   if (greyscale) {
-    filterComplex += `[grayscale][1:v]overlay=${logoPosition}[out]`;
+    filterComplex = `[0:v]split=2[color][gray];[gray]colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3[grayscale];[grayscale][1:v]overlay=${logoPosition}[out]`;
   } else {
-    filterComplex += `[0:v][1:v]overlay=${logoPosition}[out]`;
+    filterComplex = `[0:v][1:v]overlay=${logoPosition}[out]`;
   }
-  
-  ffmpegArgs.push('-filter_complex', filterComplex);
-  ffmpegArgs.push('-map', '[out]');
-  ffmpegArgs.push('-map', '0:a?');
-  
-  // Set output format
+
+  // Process video
+  const outputName = 'output.' + outputFormat;
+  const args = [
+    '-i', 'input.mp4',
+    '-i', 'logo.png',
+    '-filter_complex', filterComplex,
+    '-map', '[out]',
+    '-map', '0:a?'
+  ];
+
+  // Add format-specific settings
   if (outputFormat === 'mp4') {
-    ffmpegArgs.push('-c:v', 'libx264', '-preset', 'medium', '-crf', '23');
-    ffmpegArgs.push('-c:a', 'aac', '-b:a', '128k');
+    args.push('-c:v', 'libx264', '-preset', 'medium', '-crf', '23');
+    args.push('-c:a', 'aac', '-b:a', '128k');
   } else if (outputFormat === 'webm') {
-    ffmpegArgs.push('-c:v', 'libvpx-vp9', '-crf', '30', '-b:v', '0');
-    ffmpegArgs.push('-c:a', 'libopus');
+    args.push('-c:v', 'libvpx-vp9', '-crf', '30', '-b:v', '0');
+    args.push('-c:a', 'libopus');
   }
+
+  args.push(outputName);
+
+  // Run FFMPEG
+  await ffmpeg.run(...args);
+
+  // Read the processed file
+  const data = ffmpeg.FS('readFile', outputName);
   
-  ffmpegArgs.push('-y', outputPath);
-  
-  const ffmpeg = new Deno.Command('ffmpeg', {
-    args: ffmpegArgs,
-  });
-  
-  const { code, stderr } = await ffmpeg.output();
-  
-  if (code !== 0) {
-    throw new Error(`FFMPEG error: ${new TextDecoder().decode(stderr)}`);
-  }
+  // Write to output path
+  await Deno.writeFile(outputPath, data);
+
+  // Clean up FFMPEG's virtual filesystem
+  ffmpeg.FS('unlink', 'input.mp4');
+  ffmpeg.FS('unlink', 'logo.png');
+  ffmpeg.FS('unlink', outputName);
 }
