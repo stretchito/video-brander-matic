@@ -23,14 +23,14 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
         const userId = (await supabase.auth.getUser()).data.user?.id;
         const filePath = `${userId}/${crypto.randomUUID()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
+        // Create upload event handler
+        const uploadTask = supabase.storage
           .from('videos')
-          .upload(filePath, file, {
-            onUploadProgress: (progress) => {
-              const percent = (progress.loaded / progress.total) * 100;
-              setUploadProgress(percent);
-            }
-          });
+          .upload(filePath, file);
+
+        // Start upload and set initial progress
+        setUploadProgress(10);
+        const { error: uploadError } = await uploadTask;
 
         if (uploadError) {
           throw uploadError;
