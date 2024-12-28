@@ -23,14 +23,13 @@ Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
-      headers: {
-        ...corsHeaders,
-        'Access-Control-Max-Age': '86400',
-      }
+      headers: corsHeaders
     });
   }
 
+  // Only allow POST requests
   if (req.method !== 'POST') {
+    console.error('Invalid method:', req.method);
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
       { 
@@ -44,15 +43,17 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Starting video processing request');
     const supabaseClient = createSupabaseClient();
     const payload: ProcessVideoPayload = await req.json();
     const { jobId, videoPath, logoPath, position, greyscale, outputFormat } = payload;
 
-    console.log('Starting video processing job:', jobId);
+    console.log('Processing job:', jobId, 'with video:', videoPath);
 
     try {
       // Update job status to processing
       await updateJobStatus(supabaseClient, jobId, 'processing');
+      console.log('Updated job status to processing');
 
       // Create temp directory and set up file paths
       const tempDir = await Deno.makeTempDir();
@@ -96,11 +97,11 @@ Deno.serve(async (req) => {
 
       // Clean up temp files
       await cleanupTempFiles(tempDir);
+      console.log('Cleaned up temporary files');
 
       // Update job as completed
       await updateJobStatus(supabaseClient, jobId, 'completed', outputPath);
-
-      console.log('Video processing completed successfully');
+      console.log('Job completed successfully');
 
       return new Response(
         JSON.stringify({ 
@@ -127,7 +128,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        stack: error.stack 
+        stack: error.stack,
+        type: error.name 
       }),
       { 
         status: 500,
