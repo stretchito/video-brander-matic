@@ -1,4 +1,4 @@
-import { createFFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
 
 export interface ProcessVideoOptions {
   inputPath: string;
@@ -17,7 +17,7 @@ export async function processVideo({
   greyscale,
   outputFormat
 }: ProcessVideoOptions) {
-  const ffmpeg = createFFmpeg({ log: true });
+  const ffmpeg = new FFmpeg();
   await ffmpeg.load();
 
   // Read input files

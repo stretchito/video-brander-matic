@@ -8,7 +8,7 @@ interface FileListProps {
 }
 
 const FileList = ({ files }: FileListProps) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const lastFile = files[files.length - 1];
 
   return (
