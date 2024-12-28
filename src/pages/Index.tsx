@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import VideoUploader from '../components/VideoUploader';
 import LogoUploader from '../components/LogoUploader';
 import ProcessingOptions from '../components/ProcessingOptions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [position, setPosition] = useState('top-right');
@@ -14,6 +17,11 @@ const Index = () => {
   const [format, setFormat] = useState('mp4');
   const [status, setStatus] = useState<'waiting' | 'processing' | 'completed' | 'error'>('waiting');
   const [currentAction, setCurrentAction] = useState('Waiting to start...');
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
 
   const handleProcess = () => {
     setStatus('processing');
@@ -46,9 +54,18 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary to-secondary p-6">
       <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
-        <h1 className="text-4xl font-bold text-white text-center mb-8">
-          PM Batch Video Processor
-        </h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-4xl font-bold text-white">
+            PM Batch Video Processor
+          </h1>
+          <Button 
+            variant="outline" 
+            onClick={handleLogout}
+            className="bg-white hover:bg-gray-100"
+          >
+            Logout
+          </Button>
+        </div>
 
         <Card className="w-full">
           <CardHeader>
