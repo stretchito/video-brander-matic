@@ -5,7 +5,7 @@ import ProcessingOptions from '../components/ProcessingOptions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GoogleDriveIcon } from 'lucide-react';
+import { Cloud } from 'lucide-react';
 
 const Index = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -66,7 +66,7 @@ const Index = () => {
               </TabsContent>
               <TabsContent value="drive">
                 <div className="p-10 border-2 border-dashed rounded-lg text-center">
-                  <GoogleDriveIcon className="w-12 h-12 mb-4 mx-auto text-gray-400" />
+                  <Cloud className="w-12 h-12 mb-4 mx-auto text-gray-400" />
                   <p className="mb-2 text-lg font-medium">Connect to Google Drive</p>
                   <p className="text-sm text-gray-500">Select videos from your Google Drive</p>
                   <Button variant="outline" className="mt-4">
