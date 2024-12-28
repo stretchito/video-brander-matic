@@ -1,4 +1,4 @@
-import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7';
 
 export interface ProcessVideoOptions {
   inputPath: string;
