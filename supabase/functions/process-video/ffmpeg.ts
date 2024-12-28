@@ -1,49 +1,35 @@
-import { createFFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.11.0';
+import { createFFmpeg } from '@ffmpeg/ffmpeg';
 
-export interface ProcessVideoOptions {
-  inputPath: string;
-  logoPath: string;
-  outputPath: string;
-  position: string;
-  greyscale: boolean;
-  outputFormat: string;
-}
-
-export async function processVideo({
-  inputPath,
-  logoPath,
-  outputPath,
-  position,
-  greyscale,
-  outputFormat
-}: ProcessVideoOptions) {
+export async function processVideo(
+  videoData: Uint8Array,
+  logoData: Uint8Array,
+  position: string,
+  greyscale: boolean,
+  outputFormat: string
+): Promise<Uint8Array> {
   console.log('Initializing FFmpeg...');
-  const ffmpeg = createFFmpeg({ 
+  
+  const ffmpeg = createFFmpeg({
     log: true,
     corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
   });
-  
+
   try {
     console.log('Loading FFmpeg...');
     await ffmpeg.load();
     console.log('FFmpeg loaded successfully');
 
-    // Read input files
-    console.log('Reading input files...');
-    const videoData = await Deno.readFile(inputPath);
-    const logoData = await Deno.readFile(logoPath);
-
-    // Write files to FFMPEG's virtual filesystem
-    console.log('Writing files to FFmpeg filesystem...');
+    // Write input files
+    console.log('Writing input files...');
     ffmpeg.FS('writeFile', 'input.mp4', videoData);
     ffmpeg.FS('writeFile', 'logo.png', logoData);
 
     // Position mapping
     const logoPosition = {
       'top-left': '10:10',
-      'top-right': 'main_w-overlay_w-10:10',
-      'bottom': '(main_w-overlay_w)/2:main_h-overlay_h-10',
-      'center': '(main_w-overlay_w)/2:(main_h-overlay_h)/2'
+      'top-right': 'W-w-10:10',
+      'bottom': '(W-w)/2:H-h-10',
+      'center': '(W-w)/2:(H-h)/2'
     }[position];
 
     // Build filter complex string
@@ -53,37 +39,53 @@ export async function processVideo({
 
     console.log('Processing video with filter:', filterComplex);
 
-    // Process video
+    // Process video with format-specific settings
     const outputName = `output.${outputFormat}`;
-    await ffmpeg.run(
+    const baseArgs = [
       '-i', 'input.mp4',
       '-i', 'logo.png',
       '-filter_complex', filterComplex,
       '-map', '[out]',
-      '-map', '0:a?',
-      '-c:v', 'libx264',
-      '-preset', 'medium',
-      '-crf', '23',
-      outputName
-    );
+      '-map', '0:a?'
+    ];
+
+    if (outputFormat === 'webm') {
+      await ffmpeg.run(
+        ...baseArgs,
+        '-c:v', 'libvpx',
+        '-crf', '23',
+        '-b:v', '1M',
+        '-c:a', 'libvorbis',
+        outputName
+      );
+    } else {
+      // Default to MP4
+      await ffmpeg.run(
+        ...baseArgs,
+        '-c:v', 'libx264',
+        '-preset', 'medium',
+        '-crf', '23',
+        '-c:a', 'aac',
+        outputName
+      );
+    }
+
+    console.log('FFmpeg processing completed');
 
     // Read the processed file
     console.log('Reading processed file...');
-    const data = ffmpeg.FS('readFile', outputName);
-    
-    // Write to output path
-    console.log('Writing output file...');
-    await Deno.writeFile(outputPath, data);
+    const outputData = ffmpeg.FS('readFile', outputName);
+    console.log('Output file read successfully');
 
-    // Clean up FFMPEG's virtual filesystem
-    console.log('Cleaning up FFmpeg filesystem...');
+    // Cleanup
+    console.log('Cleaning up...');
     ffmpeg.FS('unlink', 'input.mp4');
     ffmpeg.FS('unlink', 'logo.png');
     ffmpeg.FS('unlink', outputName);
 
-    console.log('Video processing completed successfully');
+    return outputData;
   } catch (error) {
-    console.error('Error in processVideo:', error);
-    throw error;
+    console.error('Error in video processing:', error);
+    throw new Error(`Video processing failed: ${error.message}`);
   }
 }
