@@ -20,6 +20,7 @@ const Index = () => {
   const [status, setStatus] = useState<'waiting' | 'processing' | 'completed' | 'error'>('waiting');
   const [currentAction, setCurrentAction] = useState('Waiting to start...');
   const [progress, setProgress] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -28,6 +29,7 @@ const Index = () => {
 
   const handleProcess = async () => {
     try {
+      setIsProcessing(true);
       setStatus('processing');
       setCurrentAction('Creating processing job...');
       setProgress(10);
@@ -38,6 +40,7 @@ const Index = () => {
         return;
       }
 
+      // Create processing job
       const { data: job, error: jobError } = await supabase
         .from('processing_jobs')
         .insert({
@@ -46,7 +49,8 @@ const Index = () => {
           logo_path: logoPath,
           position,
           greyscale,
-          output_format: format
+          output_format: format,
+          status: 'pending'
         })
         .select()
         .single();
@@ -56,30 +60,68 @@ const Index = () => {
       }
 
       setProgress(30);
-      setCurrentAction('Job created successfully. Processing will begin shortly...');
-      toast.success('Processing job created successfully');
-      
-      // Simulate progress for testing
-      let currentProgress = 30;
-      const interval = setInterval(() => {
-        if (currentProgress >= 90) {
-          clearInterval(interval);
-          setStatus('completed');
-          setCurrentAction('Processing completed successfully!');
-          setProgress(100);
-          toast.success('Processing completed!');
-        } else {
-          currentProgress += 10;
-          setProgress(currentProgress);
-          setCurrentAction(`Processing video... ${currentProgress}%`);
-        }
-      }, 1000);
+      setCurrentAction('Processing video...');
+
+      // Call the Edge Function to process the video
+      const { data: processResult, error: processError } = await supabase.functions
+        .invoke('process-video', {
+          body: {
+            jobId: job.id,
+            videoPath,
+            logoPath,
+            position,
+            greyscale,
+            outputFormat: format
+          }
+        });
+
+      if (processError) {
+        throw processError;
+      }
+
+      // Set up real-time subscription to track job status
+      const subscription = supabase
+        .channel('processing_jobs')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'processing_jobs',
+            filter: `id=eq.${job.id}`
+          },
+          (payload) => {
+            const updatedJob = payload.new;
+            setStatus(updatedJob.status);
+            
+            if (updatedJob.status === 'processing') {
+              setProgress(50);
+            } else if (updatedJob.status === 'completed') {
+              setProgress(100);
+              setCurrentAction('Processing completed successfully!');
+              toast.success('Video processing completed!');
+              setIsProcessing(false);
+            } else if (updatedJob.status === 'error') {
+              setStatus('error');
+              setCurrentAction(`Error: ${updatedJob.error_message}`);
+              toast.error('Error processing video');
+              setIsProcessing(false);
+            }
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription when component unmounts
+      return () => {
+        subscription.unsubscribe();
+      };
 
     } catch (error) {
       console.error('Processing error:', error);
       setStatus('error');
       setCurrentAction('Error processing video');
       setProgress(0);
+      setIsProcessing(false);
       toast.error('Error processing video');
     }
   };
@@ -133,7 +175,7 @@ const Index = () => {
         <div className="flex justify-center">
           <Button
             onClick={handleProcess}
-            disabled={!videoFile || !logoFile}
+            disabled={!videoFile || !logoFile || isProcessing}
             className="bg-[#1EAEDB] hover:bg-[#1EAEDB]/90 text-white px-8 py-4 text-lg"
           >
             4. Process Video
