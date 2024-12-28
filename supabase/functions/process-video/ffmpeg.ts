@@ -1,4 +1,4 @@
-import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7';
+import { createFFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.11.0';
 
 export interface ProcessVideoOptions {
   inputPath: string;
@@ -18,14 +18,14 @@ export async function processVideo({
   outputFormat
 }: ProcessVideoOptions) {
   console.log('Initializing FFmpeg...');
-  const ffmpeg = new FFmpeg();
+  const ffmpeg = createFFmpeg({ 
+    log: true,
+    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+  });
   
   try {
     console.log('Loading FFmpeg...');
-    await ffmpeg.load({
-      coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
-      wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
-    });
+    await ffmpeg.load();
     console.log('FFmpeg loaded successfully');
 
     // Read input files
