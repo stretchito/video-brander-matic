@@ -51,7 +51,7 @@ export const useVideoProcessing = () => {
       setCurrentAction('Processing video...');
 
       // Call the Edge Function to process the video
-      const { data: processResult, error: processError } = await supabase.functions
+      const { error: processError } = await supabase.functions
         .invoke('process-video', {
           body: {
             jobId: job.id,
@@ -99,11 +99,8 @@ export const useVideoProcessing = () => {
         )
         .subscribe();
 
-      // Cleanup subscription when component unmounts
-      return () => {
-        subscription.unsubscribe();
-      };
-
+      // Return void instead of the cleanup function
+      await Promise.resolve();
     } catch (error) {
       console.error('Processing error:', error);
       setStatus('error');

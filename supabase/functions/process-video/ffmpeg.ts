@@ -38,9 +38,6 @@ export async function processVideo({
     ffmpeg.FS('writeFile', 'input.mp4', videoData);
     ffmpeg.FS('writeFile', 'logo.png', logoData);
 
-    // Prepare filter complex based on options
-    let filterComplex = '';
-    
     // Position mapping
     const logoPosition = {
       'top-left': '10:10',
@@ -50,39 +47,25 @@ export async function processVideo({
     }[position];
 
     // Build filter complex string
-    if (greyscale) {
-      filterComplex = `[0:v]split=2[color][gray];[gray]colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3[grayscale];[grayscale][1:v]overlay=${logoPosition}[out]`;
-    } else {
-      filterComplex = `[0:v][1:v]overlay=${logoPosition}[out]`;
-    }
+    const filterComplex = greyscale
+      ? `[0:v]split=2[color][gray];[gray]colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3[grayscale];[grayscale][1:v]overlay=${logoPosition}[out]`
+      : `[0:v][1:v]overlay=${logoPosition}[out]`;
 
     console.log('Processing video with filter:', filterComplex);
 
     // Process video
     const outputName = `output.${outputFormat}`;
-    const args = [
+    await ffmpeg.run(
       '-i', 'input.mp4',
       '-i', 'logo.png',
       '-filter_complex', filterComplex,
       '-map', '[out]',
-      '-map', '0:a?'
-    ];
-
-    // Add format-specific settings
-    if (outputFormat === 'mp4') {
-      args.push('-c:v', 'libx264', '-preset', 'medium', '-crf', '23');
-      args.push('-c:a', 'aac', '-b:a', '128k');
-    } else if (outputFormat === 'webm') {
-      args.push('-c:v', 'libvpx-vp9', '-crf', '30', '-b:v', '0');
-      args.push('-c:a', 'libopus');
-    }
-
-    args.push(outputName);
-
-    // Run FFMPEG
-    console.log('Running FFmpeg with args:', args);
-    await ffmpeg.run(...args);
-    console.log('FFmpeg processing completed');
+      '-map', '0:a?',
+      '-c:v', 'libx264',
+      '-preset', 'medium',
+      '-crf', '23',
+      outputName
+    );
 
     // Read the processed file
     console.log('Reading processed file...');
