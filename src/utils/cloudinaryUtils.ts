@@ -24,12 +24,15 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', 'ml_default');
-  formData.append('api_key', import.meta.env.VITE_CLOUDINARY_API_KEY);
   
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  if (!cloudName) {
-    throw new Error('Cloudinary cloud name is not configured');
+  const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
+  
+  if (!cloudName || !apiKey) {
+    throw new Error('Cloudinary credentials are not properly configured');
   }
+  
+  formData.append('api_key', apiKey);
   
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
