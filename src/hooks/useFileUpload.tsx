@@ -8,11 +8,15 @@ interface UseFileUploadOptions {
   onSuccess: (file: File, path: string) => void;
 }
 
+interface UploadOptions {
+  metadata?: Record<string, any>;
+}
+
 export const useFileUpload = ({ bucket, fileTypes, onSuccess }: UseFileUploadOptions) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
 
-  const handleUpload = useCallback(async (acceptedFiles: File[]) => {
+  const handleUpload = useCallback(async (acceptedFiles: File[], options?: UploadOptions) => {
     const file = acceptedFiles[0];
     const fileType = file.type.split('/')[0];
     
@@ -26,10 +30,12 @@ export const useFileUpload = ({ bucket, fileTypes, onSuccess }: UseFileUploadOpt
         // Set initial progress
         setUploadProgress(10);
 
-        // Create upload task
+        // Create upload task with metadata if provided
         const { error: uploadError } = await supabase.storage
           .from(bucket)
-          .upload(filePath, file);
+          .upload(filePath, file, {
+            ...(options?.metadata && { metadata: options.metadata })
+          });
 
         if (uploadError) {
           throw uploadError;

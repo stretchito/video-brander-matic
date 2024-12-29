@@ -14,10 +14,14 @@ interface UseMultiFileUploadOptions {
   onFileSelect: (file: File, path: string) => void;
 }
 
+interface UploadOptions {
+  metadata?: Record<string, any>;
+}
+
 export const useMultiFileUpload = ({ bucket, fileTypes, onFileSelect }: UseMultiFileUploadOptions) => {
   const [uploadStates, setUploadStates] = useState<Record<string, FileUploadState>>({});
 
-  const handleUpload = useCallback(async (acceptedFiles: File[]) => {
+  const handleUpload = useCallback(async (acceptedFiles: File[], options?: UploadOptions) => {
     for (const file of acceptedFiles) {
       const fileType = file.type.split('/')[0];
       
@@ -41,10 +45,12 @@ export const useMultiFileUpload = ({ bucket, fileTypes, onFileSelect }: UseMulti
           }
         }));
 
-        // Create upload event
+        // Create upload event with metadata if provided
         const { error: uploadError } = await supabase.storage
           .from(bucket)
-          .upload(filePath, file);
+          .upload(filePath, file, {
+            ...(options?.metadata && { metadata: options.metadata })
+          });
 
         if (uploadError) {
           throw uploadError;
