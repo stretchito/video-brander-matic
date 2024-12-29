@@ -20,43 +20,36 @@ export const useFileUpload = ({ bucket, fileTypes, onSuccess }: UseFileUploadOpt
     const file = acceptedFiles[0];
     const fileType = file.type.split('/')[0];
     
-    if (file && fileTypes.includes(fileType)) {
-      try {
-        setUploadProgress(0);
-        const fileExt = file.name.split('.').pop();
-        const userId = (await supabase.auth.getUser()).data.user?.id;
-        const filePath = `${userId}/${crypto.randomUUID()}.${fileExt}`;
-
-        // Set initial progress
-        setUploadProgress(10);
-
-        // Create upload task with metadata if provided
-        const { error: uploadError } = await supabase.storage
-          .from(bucket)
-          .upload(filePath, file, {
-            ...(options?.metadata && { metadata: options.metadata })
-          });
-
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        // Set progress to 50% after upload starts
-        setUploadProgress(50);
-
-        setCurrentFile(file.name);
-        onSuccess(file, filePath);
-        toast.success('File uploaded successfully');
-        
-        // Set final progress
-        setUploadProgress(100);
-      } catch (error) {
-        console.error('Upload error:', error);
-        toast.error('Error uploading file');
-        setUploadProgress(0);
-      }
-    } else {
+    if (!fileTypes.includes(fileType)) {
       toast.error(`Please upload a valid ${fileTypes.join(' or ')} file`);
+      return;
+    }
+
+    try {
+      setUploadProgress(0);
+      const fileExt = file.name.split('.').pop();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      const filePath = `${userId}/${crypto.randomUUID()}.${fileExt}`;
+
+      setUploadProgress(10);
+      setCurrentFile(file.name);
+
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file, {
+          ...(options?.metadata && { metadata: options.metadata })
+        });
+
+      if (uploadError) throw uploadError;
+
+      setUploadProgress(100);
+      onSuccess(file, filePath);
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Error uploading file');
+      setUploadProgress(0);
+      setCurrentFile(null);
     }
   }, [bucket, fileTypes, onSuccess]);
 

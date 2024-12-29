@@ -38,27 +38,18 @@ const LogoUploader = ({ onLogoSelect }: LogoUploaderProps) => {
         .remove([duplicateFile.existingPath]);
 
       await handleUpload([duplicateFile.file], { metadata: { fileHash: duplicateFile.hash } });
-      
       toast.success('New logo version uploaded successfully');
     } catch (error) {
       console.error('Error handling logo replacement:', error);
       toast.error('Error replacing logo');
     }
-
     setDuplicateFile(null);
   };
 
-  const handleKeepExisting = async () => {
+  const handleKeepExisting = () => {
     if (!duplicateFile) return;
-
-    try {
-      onLogoSelect(duplicateFile.file, duplicateFile.existingPath);
-      toast.success('Using existing logo version');
-    } catch (error) {
-      console.error('Error using existing logo:', error);
-      toast.error('Error using existing logo');
-    }
-
+    onLogoSelect(duplicateFile.file, duplicateFile.existingPath);
+    toast.success('Using existing logo version');
     setDuplicateFile(null);
   };
 
