@@ -1,6 +1,7 @@
 import { getCloudinaryConfig } from '@/utils/cloudinaryConfig';
 import { PositionType, VideoFormat } from '@/types/videoProcessing';
-import { uploadToCloudinary, getOverlayPosition } from '@/utils/cloudinaryUtils';
+import { uploadToCloudinary } from '@/utils/cloudinaryUtils';
+import { buildTransformationString, buildCloudinaryUrl } from '@/utils/cloudinaryTransformations';
 import { toast } from 'sonner';
 
 export const useCloudinaryProcessing = () => {
@@ -20,44 +21,35 @@ export const useCloudinaryProcessing = () => {
       console.log('Uploading logo...', logoFile.name);
       const logoUpload = await uploadToCloudinary(logoFile, 'image');
       console.log('Logo uploaded:', logoUpload);
-      console.log('Logo public_id:', logoUpload.public_id);
       
       // Upload video
       console.log('Uploading video...', videoFile.name);
       const videoUpload = await uploadToCloudinary(videoFile, 'video');
       console.log('Video uploaded:', videoUpload);
-      console.log('Video public_id:', videoUpload.public_id);
-      console.log('Video version:', videoUpload.version);
       
-      // Get logo position
-      const overlayPosition = getOverlayPosition(position);
-      
-      // Build transformation array
-      const transformations = [];
-      
-      // Add saturation effect if greyscale is enabled
-      if (greyscale) {
-        transformations.push('e_saturation:10');
-      }
-      
-      // Add logo overlay with correct positioning and size constraints
-      // Make sure to use the full public_id including folder if present
-      const logoPublicId = logoUpload.public_id.replace(/\//g, ':');
-      transformations.push(
-        `l_${logoPublicId}/c_scale,h_100,w_300` + 
-        `/g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y},fl_layer_apply`
+      // Build transformation string using video metadata
+      const transformationString = buildTransformationString(
+        logoUpload.public_id,
+        position,
+        greyscale,
+        {
+          width: videoUpload.width,
+          height: videoUpload.height
+        }
       );
       
-      // Join transformations with forward slashes
-      const transformationString = transformations.join('/');
-      console.log('Transformation string:', transformationString);
-      
-      // Create final video URL with proper version handling
-      const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/v${videoUpload.version}/${videoUpload.public_id}.${format}`;
+      // Create final video URL
+      const finalVideoUrl = buildCloudinaryUrl(
+        config.cloudName,
+        transformationString,
+        videoUpload.version.toString(),
+        videoUpload.public_id,
+        format
+      );
+
       console.log('=== FINAL VIDEO URL ===');
       console.log(finalVideoUrl);
       console.log('======================');
-      console.log('Look for this in Network tab:', `${videoUpload.public_id}.${format}`);
       
       // Verify video URL is accessible
       let retryCount = 0;
@@ -74,15 +66,12 @@ export const useCloudinaryProcessing = () => {
             console.log('Final working URL:', finalVideoUrl);
           } else {
             console.log(`Attempt ${retryCount + 1}: Response status:`, response.status);
-            console.log(`Attempt ${retryCount + 1}: Response headers:`, Object.fromEntries(response.headers));
             retryCount++;
-            console.log(`Retry ${retryCount}/${maxRetries} - Video not ready yet`);
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
         } catch (error) {
           console.log(`Attempt ${retryCount + 1} error:`, error);
           retryCount++;
-          console.log(`Retry ${retryCount}/${maxRetries} - Error checking video:`, error);
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
