@@ -2,7 +2,7 @@ import { Transformation } from '@cloudinary/url-gen';
 import { grayscale } from '@cloudinary/url-gen/actions/effect';
 import { source } from '@cloudinary/url-gen/actions/overlay';
 import { Position } from '@cloudinary/url-gen/qualifiers/position';
-import { compass, Gravity } from '@cloudinary/url-gen/qualifiers/gravity';
+import { compass } from '@cloudinary/url-gen/qualifiers/gravity';
 import { PositionType, OverlayPosition } from '@/types/videoProcessing';
 
 export const getOverlayPosition = (position: PositionType): OverlayPosition => {
