@@ -28,7 +28,10 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
         setFileOptions
       }) => {
         const { getRootProps, getInputProps, isDragActive } = useDropzone({
-          onDrop: setDroppedFiles,
+          onDrop: (files) => {
+            console.log('Dropped files:', files.map(f => ({ name: f.name, size: f.size / (1024 * 1024) + 'MB' })));
+            setDroppedFiles(files);
+          },
           accept: {
             'video/*': ['.mp4', '.mov', '.avi', '.webm']
           },

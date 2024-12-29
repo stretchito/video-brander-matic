@@ -19,16 +19,32 @@ const FileSizeValidator = ({
   React.useEffect(() => {
     const newTotalSize = files.reduce((acc, file) => acc + file.size, 0) + currentTotalSize;
     
+    console.log('File validation:', {
+      files: files.map(f => ({ name: f.name, size: f.size / (1024 * 1024) + 'MB' })),
+      currentTotalSize: currentTotalSize / (1024 * 1024) + 'MB',
+      newTotalSize: newTotalSize / (1024 * 1024) + 'MB',
+      maxFileSize: maxFileSize / (1024 * 1024) + 'MB',
+      maxTotalSize: maxTotalSize / (1024 * 1024) + 'MB'
+    });
+
     // Check individual file sizes
     const oversizedFiles = files.filter(file => file.size > maxFileSize);
     if (oversizedFiles.length > 0) {
-      toast.error(`Some files exceed the ${maxFileSize / (1024 * 1024)}MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      const oversizedDetails = oversizedFiles.map(f => 
+        `${f.name} (${(f.size / (1024 * 1024)).toFixed(2)}MB)`
+      ).join(', ');
+      
+      toast.error(
+        `Some files exceed the ${(maxFileSize / (1024 * 1024)).toFixed(0)}MB limit: ${oversizedDetails}`
+      );
       return;
     }
 
     // Check total size
     if (newTotalSize > maxTotalSize) {
-      toast.error(`Total upload size exceeds ${maxTotalSize / (1024 * 1024)}MB limit`);
+      toast.error(
+        `Total upload size (${(newTotalSize / (1024 * 1024)).toFixed(2)}MB) exceeds ${(maxTotalSize / (1024 * 1024)).toFixed(0)}MB limit`
+      );
       return;
     }
 
