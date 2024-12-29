@@ -28,15 +28,15 @@ export const useCloudinaryProcessing = () => {
       // Create transformation string
       const transformations = [];
       
-      // Add logo overlay with position
-      const overlayPosition = getOverlayPosition(position);
-      const overlayTransform = `l_${logoUpload.public_id},g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y}`;
-      transformations.push(overlayTransform);
-
-      // Add greyscale after logo overlay if enabled
+      // Add greyscale before logo overlay if enabled
       if (greyscale) {
         transformations.push('e_grayscale');
       }
+
+      // Add logo overlay with position after any video effects
+      const overlayPosition = getOverlayPosition(position);
+      const overlayTransform = `l_${logoUpload.public_id},g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y}`;
+      transformations.push(overlayTransform);
 
       // Create final video URL
       const transformationString = transformations.join(',');
