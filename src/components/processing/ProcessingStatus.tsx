@@ -46,17 +46,21 @@ const ProcessingStatus = ({
     return 'bg-[#33C3F0]';
   };
 
+  // Update videoUrls whenever a new video is processed
   useEffect(() => {
-    if (currentAction.includes('http')) {
-      const urls = currentAction.split(',')
-        .map(url => url.trim())
-        .filter(url => url.startsWith('https://res.cloudinary.com') && url.endsWith('.mp4'));
-      setVideoUrls(urls);
-      if (urls.length > 0) {
-        setIsModalOpen(true);
-      }
+    if (currentAction.startsWith('https://res.cloudinary.com') && currentAction.endsWith('.mp4')) {
+      setVideoUrls(prev => [...prev, currentAction]);
+      setIsModalOpen(true);
     }
   }, [currentAction]);
+
+  // Reset video URLs when starting new batch
+  useEffect(() => {
+    if (status === 'waiting') {
+      setVideoUrls([]);
+      setIsModalOpen(false);
+    }
+  }, [status]);
 
   const hasProcessedVideos = videoUrls.length > 0;
   const allVideosProcessed = processedCount === totalVideos && totalVideos > 0;
@@ -111,14 +115,12 @@ const ProcessingStatus = ({
         </Card>
       </div>
 
-      {hasProcessedVideos && (
-        <ProcessedVideosModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          videoUrls={videoUrls}
-          processedCount={processedCount}
-        />
-      )}
+      <ProcessedVideosModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        videoUrls={videoUrls}
+        processedCount={processedCount}
+      />
     </div>
   );
 };
