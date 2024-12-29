@@ -30,21 +30,21 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) throw new Error('User not authenticated');
 
-          const { data: { publicUrl } } = supabase.storage
+          const { data } = supabase.storage
             .from('videos')
             .getPublicUrl(path);
 
-          console.log('Invoking transcribe-video function with URL:', publicUrl);
-          const { data, error } = await supabase.functions.invoke('transcribe-video', {
+          console.log('Invoking transcribe-video function with URL:', data.publicUrl);
+          const { data: transcriptionData, error } = await supabase.functions.invoke('transcribe-video', {
             body: {
-              videoUrl: publicUrl,
+              videoUrl: data.publicUrl,
               jobId: path,
               userId: user.id,
             },
           });
 
           if (error) throw error;
-          console.log('Transcription response:', data);
+          console.log('Transcription response:', transcriptionData);
           toast.success('Transcription process started');
         } catch (error) {
           console.error('Transcription error:', error);
