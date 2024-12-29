@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { cloudinary } from '@/integrations/cloudinary/config';
 import { toast } from 'sonner';
 
 export const useVideoProcessing = () => {
@@ -15,30 +16,86 @@ export const useVideoProcessing = () => {
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+    
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
+
+    return await response.json();
+  };
+
   const handleProcess = async () => {
     try {
-      setIsProcessing(true);
-      setStatus('processing');
-      setCurrentAction('Creating processing job...');
-      setProgress(10);
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('User not authenticated');
+      if (!videoFile || !logoFile) {
+        toast.error('Please upload both video and logo files');
         return;
       }
 
-      // Create processing job
+      setIsProcessing(true);
+      setStatus('processing');
+      setCurrentAction('Uploading files to Cloudinary...');
+      setProgress(10);
+
+      // Upload video and logo to Cloudinary
+      const [videoUpload, logoUpload] = await Promise.all([
+        uploadToCloudinary(videoFile, 'video'),
+        uploadToCloudinary(logoFile, 'image')
+      ]);
+
+      setProgress(50);
+      setCurrentAction('Creating processing job...');
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Create transformation URL
+      const transformations = [];
+      if (greyscale) {
+        transformations.push({ effect: 'grayscale' });
+      }
+
+      // Add logo overlay with position
+      const overlayPosition = getOverlayPosition(position);
+      const transformation = {
+        overlay: logoUpload.public_id,
+        ...overlayPosition
+      };
+      transformations.push(transformation);
+
+      // Create the final video URL with transformations
+      const finalVideoUrl = cloudinary
+        .video(videoUpload.public_id)
+        .format(format)
+        .addTransformation(transformations)
+        .toURL();
+
+      // Store job in Supabase
       const { data: job, error: jobError } = await supabase
         .from('processing_jobs')
         .insert({
           user_id: user.id,
-          video_path: videoPath,
-          logo_path: logoPath,
+          video_path: videoUpload.public_id,
+          logo_path: logoUpload.public_id,
           position,
           greyscale,
           output_format: format,
-          status: 'pending'
+          status: 'completed',
+          output_path: finalVideoUrl
         })
         .select()
         .single();
@@ -47,80 +104,47 @@ export const useVideoProcessing = () => {
         throw jobError;
       }
 
-      setProgress(30);
-      setCurrentAction('Processing video...');
+      setProgress(100);
+      setStatus('completed');
+      setCurrentAction('Processing completed successfully!');
+      toast.success('Video processing completed!');
 
-      // Call the Edge Function to process the video
-      const { error: processError } = await supabase.functions
-        .invoke('process-video', {
-          body: {
-            jobId: job.id,
-            videoPath,
-            logoPath,
-            position,
-            greyscale,
-            outputFormat: format
-          }
-        });
-
-      if (processError) {
-        throw processError;
-      }
-
-      // Set up real-time subscription to track job status
-      const subscription = supabase
-        .channel('processing_jobs')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'processing_jobs',
-            filter: `id=eq.${job.id}`
-          },
-          (payload) => {
-            const updatedJob = payload.new;
-            setStatus(updatedJob.status);
-            
-            if (updatedJob.status === 'processing') {
-              setProgress(50);
-            } else if (updatedJob.status === 'completed') {
-              setProgress(100);
-              setCurrentAction('Processing completed successfully!');
-              toast.success('Video processing completed!');
-              setIsProcessing(false);
-            } else if (updatedJob.status === 'error') {
-              setStatus('error');
-              setCurrentAction(`Error: ${updatedJob.error_message}`);
-              toast.error('Error processing video');
-              setIsProcessing(false);
-            }
-          }
-        )
-        .subscribe();
-
-      // Return void instead of the cleanup function
-      await Promise.resolve();
     } catch (error) {
       console.error('Processing error:', error);
       setStatus('error');
       setCurrentAction('Error processing video');
       setProgress(0);
-      setIsProcessing(false);
       toast.error('Error processing video');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getOverlayPosition = (position: string) => {
+    switch (position) {
+      case 'top-left':
+        return { gravity: 'north_west', x: 10, y: 10 };
+      case 'top-right':
+        return { gravity: 'north_east', x: 10, y: 10 };
+      case 'bottom':
+        return { gravity: 'south', y: 10 };
+      case 'center':
+        return { gravity: 'center' };
+      default:
+        return { gravity: 'north_west', x: 10, y: 10 };
     }
   };
 
   const handleVideoSelect = (file: File, path: string) => {
     setVideoFile(file);
     setVideoPath(path);
-    toast.success('Video uploaded successfully');
+    toast.success('Video selected successfully');
   };
 
   const handleLogoSelect = (file: File, path: string) => {
     setLogoFile(file);
     setLogoPath(path);
-    toast.success('Logo uploaded successfully');
+    toast.success('Logo selected successfully');
   };
 
   return {
