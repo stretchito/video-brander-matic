@@ -24,7 +24,8 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
         handleValidFiles,
         handleTranscriptionChange,
         handleCaptionsChange,
-        setDroppedFiles
+        setDroppedFiles,
+        setFileOptions
       }) => {
         const { getRootProps, getInputProps, isDragActive } = useDropzone({
           onDrop: setDroppedFiles,
