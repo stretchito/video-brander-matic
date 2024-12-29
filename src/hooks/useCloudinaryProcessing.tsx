@@ -14,8 +14,9 @@ export const useCloudinaryProcessing = () => {
   ) => {
     try {
       // Get Cloudinary configuration
+      console.log('Fetching Cloudinary configuration...');
       const config = await getCloudinaryConfig();
-      console.log('Starting video processing for:', videoFile.name);
+      console.log('Cloudinary configuration received');
       
       // Upload logo first
       console.log('Uploading logo...', logoFile.name);
@@ -28,6 +29,15 @@ export const useCloudinaryProcessing = () => {
       console.log('Video uploaded:', videoUpload);
       
       // Build transformation string using video metadata
+      console.log('Building transformation string with parameters:', {
+        position,
+        greyscale,
+        videoMetadata: {
+          width: videoUpload.width,
+          height: videoUpload.height
+        }
+      });
+
       const transformationString = buildTransformationString(
         logoUpload.public_id,
         position,

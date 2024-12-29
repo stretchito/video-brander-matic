@@ -12,6 +12,7 @@ export const useVideoProcessing = () => {
 
   // Clear videos on page load/refresh
   useEffect(() => {
+    console.log('Initializing video processing state');
     videoState.setVideoFiles([]);
     processingState.setProcessedCount(0);
     processingState.setProcessedUrls([]);
@@ -19,7 +20,16 @@ export const useVideoProcessing = () => {
 
   const handleProcess = async () => {
     try {
+      console.log('Starting video processing with state:', {
+        videoFiles: videoState.videoFiles,
+        logoFile: videoState.logoFile,
+        position: videoState.position,
+        format: videoState.format,
+        greyscale: videoState.greyscale
+      });
+
       if (videoState.videoFiles.length === 0 || !videoState.logoFile) {
+        console.warn('Missing required files');
         toast.error('Please upload both video and logo files');
         return;
       }
@@ -32,6 +42,7 @@ export const useVideoProcessing = () => {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        console.error('User not authenticated');
         throw new Error('User not authenticated');
       }
 
@@ -40,11 +51,19 @@ export const useVideoProcessing = () => {
         const currentVideoNumber = index + 1;
         const totalVideos = videoState.videoFiles.length;
         
+        console.log(`Processing video ${currentVideoNumber}/${totalVideos}:`, file.name);
+        
         processingState.updateStatus(
           'processing',
           `Processing video ${currentVideoNumber} of ${totalVideos}`,
           Math.round((currentVideoNumber / totalVideos) * 100)
         );
+
+        console.log('Starting Cloudinary processing with options:', {
+          position: videoState.position,
+          greyscale: videoState.greyscale,
+          format: videoState.format
+        });
 
         const finalVideoUrl = await processVideoWithCloudinary(
           file,
@@ -54,6 +73,8 @@ export const useVideoProcessing = () => {
           videoState.format,
           user.id
         );
+
+        console.log('Video processing completed:', finalVideoUrl);
 
         processingState.setProcessedUrls(prev => [...prev, finalVideoUrl]);
         processingState.setProcessedCount(prev => prev + 1);
@@ -65,6 +86,7 @@ export const useVideoProcessing = () => {
         );
       }
 
+      console.log('All videos processed successfully');
       toast.success('Video processing completed!');
 
     } catch (error) {

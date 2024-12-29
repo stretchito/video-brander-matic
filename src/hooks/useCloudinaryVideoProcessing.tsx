@@ -14,32 +14,53 @@ export const useCloudinaryVideoProcessing = () => {
     format: VideoFormat,
     userId: string
   ) => {
-    const { finalVideoUrl, videoPublicId, logoPublicId } = await processVideo(
-      file,
-      logoFile,
+    console.log('Starting Cloudinary video processing:', {
+      videoFile: file.name,
+      logoFile: logoFile.name,
       position,
       greyscale,
       format
-    );
+    });
 
-    const { error: jobError } = await supabase
-      .from('processing_jobs')
-      .insert({
-        user_id: userId,
-        video_path: videoPublicId,
-        logo_path: logoPublicId,
+    try {
+      const { finalVideoUrl, videoPublicId, logoPublicId } = await processVideo(
+        file,
+        logoFile,
         position,
         greyscale,
-        output_format: format,
-        status: 'completed',
-        output_path: finalVideoUrl
+        format
+      );
+
+      console.log('Cloudinary processing completed:', {
+        finalVideoUrl,
+        videoPublicId,
+        logoPublicId
       });
 
-    if (jobError) {
-      throw jobError;
-    }
+      const { error: jobError } = await supabase
+        .from('processing_jobs')
+        .insert({
+          user_id: userId,
+          video_path: videoPublicId,
+          logo_path: logoPublicId,
+          position,
+          greyscale,
+          output_format: format,
+          status: 'completed',
+          output_path: finalVideoUrl
+        });
 
-    return finalVideoUrl;
+      if (jobError) {
+        console.error('Error saving job to database:', jobError);
+        throw jobError;
+      }
+
+      console.log('Processing job saved successfully');
+      return finalVideoUrl;
+    } catch (error) {
+      console.error('Error in processVideoWithCloudinary:', error);
+      throw error;
+    }
   };
 
   return { processVideoWithCloudinary };
