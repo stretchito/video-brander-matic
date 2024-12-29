@@ -1,4 +1,5 @@
-import { createFFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.11.0';
+import { createFFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7/dist/esm/index.js';
+import { fetchFile } from 'https://esm.sh/@ffmpeg/util@0.12.1/dist/esm/index.js';
 
 export async function processVideo(
   videoData: Uint8Array,
@@ -11,8 +12,7 @@ export async function processVideo(
   
   const ffmpeg = createFFmpeg({
     log: true,
-    logger: ({ message }) => console.log('FFmpeg:', message),
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+    logger: ({ message }) => console.log('FFmpeg:', message)
   });
 
   try {
