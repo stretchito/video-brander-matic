@@ -13,30 +13,41 @@ interface ProcessedVideosModalProps {
   isOpen: boolean;
   onClose: () => void;
   videoUrls: string[];
+  processedCount: number;
 }
 
-const ProcessedVideosModal = ({ isOpen, onClose, videoUrls }: ProcessedVideosModalProps) => {
+const ProcessedVideosModal = ({ 
+  isOpen, 
+  onClose, 
+  videoUrls,
+  processedCount
+}: ProcessedVideosModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[500px]">
+      <DialogContent className="max-w-[500px] w-[95vw] overflow-y-auto max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Processed Videos</DialogTitle>
           <DialogDescription>
-            Click the buttons below to play your processed videos
+            {processedCount > 0 
+              ? `${processedCount} video${processedCount > 1 ? 's' : ''} processed and ready to play`
+              : 'No videos processed yet'}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {videoUrls.map((url, index) => (
-            <div key={url} className="flex items-center justify-between p-4 bg-secondary/10 rounded-lg">
+            <div 
+              key={url} 
+              className="flex items-center justify-between p-4 bg-secondary/10 rounded-lg animate-fadeIn"
+            >
               <span className="font-medium">Video {index + 1}</span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => window.open(url, '_blank')}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 whitespace-nowrap"
               >
                 <PlayCircle className="w-4 h-4" />
-                Play Video
+                Play Video {index + 1}
               </Button>
             </div>
           ))}

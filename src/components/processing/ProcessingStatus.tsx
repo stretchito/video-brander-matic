@@ -10,9 +10,17 @@ interface ProcessingStatusProps {
   status: 'waiting' | 'processing' | 'completed' | 'error';
   currentAction: string;
   progress: number;
+  totalVideos?: number;
+  processedCount?: number;
 }
 
-const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusProps) => {
+const ProcessingStatus = ({ 
+  status, 
+  currentAction, 
+  progress,
+  totalVideos = 0,
+  processedCount = 0
+}: ProcessingStatusProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const getStatusColor = () => {
@@ -53,7 +61,9 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
   };
 
   const videoUrls = getVideoUrls();
-  const hasMultipleVideos = videoUrls.length > 1;
+  const hasProcessedVideos = videoUrls.length > 0;
+  const allVideosProcessed = processedCount === totalVideos && totalVideos > 0;
+  const showSuccessMessage = status === 'completed' && allVideosProcessed;
 
   return (
     <div className="flex flex-col gap-4">
@@ -76,19 +86,19 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
           </CardContent>
         </Card>
 
-        <Card className={`w-full md:w-1/2 ${status === 'completed' ? 'bg-green-100' : ''}`}>
+        <Card className={`w-full md:w-1/2 ${showSuccessMessage ? 'bg-green-100' : ''}`}>
           <CardHeader>
             <CardTitle className="text-sm">Current Action</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="font-medium">
-              {status === 'completed' && videoUrls.length > 0 ? (
+              {showSuccessMessage ? (
                 <span className="text-green-600 font-bold">Success!!</span>
               ) : (
                 currentAction
               )}
             </p>
-            {status === 'completed' && videoUrls.length > 0 && (
+            {hasProcessedVideos && (
               <div className="mt-2">
                 <Button
                   onClick={() => setIsModalOpen(true)}
@@ -96,7 +106,7 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
                   className="w-full flex items-center gap-2"
                 >
                   <PlayCircle className="w-4 h-4" />
-                  View {hasMultipleVideos ? 'Videos' : 'Video'}
+                  View Processed Videos ({processedCount}/{totalVideos})
                 </Button>
               </div>
             )}
@@ -108,6 +118,7 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         videoUrls={videoUrls}
+        processedCount={processedCount}
       />
     </div>
   );

@@ -3,16 +3,18 @@ import { toast } from 'sonner';
 import { useVideoState } from './useVideoState';
 import { useProcessingStatus } from './useProcessingStatus';
 import { useCloudinaryProcessing } from './useCloudinaryProcessing';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export const useVideoProcessing = () => {
   const videoState = useVideoState();
   const processingStatus = useProcessingStatus();
   const { processVideo } = useCloudinaryProcessing();
+  const [processedCount, setProcessedCount] = useState(0);
 
   // Clear videos on page load/refresh
   useEffect(() => {
     videoState.setVideoFiles([]);
+    setProcessedCount(0);
   }, []);
 
   const handleProcess = async () => {
@@ -26,6 +28,7 @@ export const useVideoProcessing = () => {
       processingStatus.updateStatus('processing', 'Preparing files...', 10);
 
       const processedUrls: string[] = [];
+      setProcessedCount(0);
 
       for (const [index, { file }] of videoState.videoFiles.entries()) {
         processingStatus.updateStatus(
@@ -39,7 +42,11 @@ export const useVideoProcessing = () => {
           throw new Error('User not authenticated');
         }
 
-        processingStatus.updateStatus('processing', 'Final Processing...', 70);
+        processingStatus.updateStatus(
+          'processing', 
+          `Processing video ${index + 1}...`, 
+          70
+        );
         
         const { finalVideoUrl, videoPublicId, logoPublicId } = await processVideo(
           file,
@@ -50,6 +57,7 @@ export const useVideoProcessing = () => {
         );
 
         processedUrls.push(finalVideoUrl);
+        setProcessedCount(prev => prev + 1);
 
         const { error: jobError } = await supabase
           .from('processing_jobs')
@@ -93,6 +101,8 @@ export const useVideoProcessing = () => {
   return {
     ...videoState,
     ...processingStatus,
+    processedCount,
+    totalVideos: videoState.videoFiles.length,
     handleProcess
   };
 };
