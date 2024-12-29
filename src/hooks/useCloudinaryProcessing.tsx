@@ -28,25 +28,27 @@ export const useCloudinaryProcessing = () => {
       // Create transformation string
       const transformations = [];
       
-      // Add greyscale before logo overlay if enabled
+      // Add greyscale effect to video if enabled (before logo overlay)
       if (greyscale) {
         transformations.push('e_grayscale');
       }
 
-      // Add logo overlay with position after any video effects
+      // Get logo position
       const overlayPosition = getOverlayPosition(position);
-      // Add logo with size constraints (h_100,w_300,c_fit ensures the logo maintains aspect ratio within these limits)
-      // fl_layer_apply,fl_relative ensures the logo is always rendered on top
-      const overlayTransform = `l_${logoUpload.public_id},h_100,w_300,c_fit,g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y},fl_layer_apply,fl_relative`;
+      
+      // Add logo overlay with position and size constraints
+      // h_100,w_300,c_fit ensures logo maintains aspect ratio within limits
+      const overlayTransform = `l_${logoUpload.public_id}/h_100,w_300,c_fit/g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y},fl_layer_apply,fl_relative`;
       transformations.push(overlayTransform);
 
-      // Create final video URL with version to ensure fresh transformation
+      // Create final video URL with all transformations
       const transformationString = transformations.join('/');
       const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/v${videoUpload.version}/${videoUpload.public_id}.${format}`;
       
       console.log('Final Processing...');
+      console.log('Transformation string:', transformationString);
       
-      // Add a delay and verify the video URL is accessible
+      // Verify video URL is accessible with retries
       let retryCount = 0;
       const maxRetries = 10;
       let videoReady = false;
@@ -56,12 +58,15 @@ export const useCloudinaryProcessing = () => {
           const response = await fetch(finalVideoUrl, { method: 'HEAD' });
           if (response.ok) {
             videoReady = true;
+            console.log('Video URL verified and accessible');
           } else {
             retryCount++;
+            console.log(`Retry ${retryCount}/${maxRetries} - Video not ready yet`);
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
         } catch (error) {
           retryCount++;
+          console.log(`Retry ${retryCount}/${maxRetries} - Error checking video:`, error);
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
