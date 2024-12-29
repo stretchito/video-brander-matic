@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { supabase } from '@/integrations/supabase/client';
 import DuplicateFileDialog from './upload/DuplicateFileDialog';
 import LogoDropzone from './upload/logo/LogoDropzone';
 import LogoProgress from './upload/logo/LogoProgress';
@@ -18,7 +19,7 @@ const LogoUploader = ({ onLogoSelect }: LogoUploaderProps) => {
     onSuccess: onLogoSelect
   });
 
-  const { duplicateFile, setDuplicateFile, onDrop } = useLogo(onLogoSelect);
+  const { duplicateFile, setDuplicateFile, onDrop } = useLogo(onLogoSelect, handleUpload);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

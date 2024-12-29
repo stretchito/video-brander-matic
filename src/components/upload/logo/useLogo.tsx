@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { toast } from 'sonner';
 import { calculateFileHash } from '@/utils/fileHash';
 import { supabase } from '@/integrations/supabase/client';
 
-export const useLogo = (onLogoSelect: (file: File, path: string) => void) => {
+type HandleUploadFunction = (files: File[], options?: { metadata?: Record<string, any> }) => Promise<void>;
+
+export const useLogo = (
+  onLogoSelect: (file: File, path: string) => void,
+  handleUpload: HandleUploadFunction
+) => {
   const [duplicateFile, setDuplicateFile] = useState<{ file: File; hash: string; existingPath: string } | null>(null);
 
   const checkForDuplicates = async (file: File) => {
