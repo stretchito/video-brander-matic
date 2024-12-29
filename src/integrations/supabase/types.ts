@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       processing_jobs: {
         Row: {
+          captions_enabled: boolean | null
           created_at: string
           error_message: string | null
           greyscale: boolean
@@ -20,11 +21,13 @@ export type Database = {
           output_path: string | null
           position: string
           status: string
+          transcription_enabled: boolean | null
           updated_at: string
           user_id: string
           video_path: string
         }
         Insert: {
+          captions_enabled?: boolean | null
           created_at?: string
           error_message?: string | null
           greyscale?: boolean
@@ -34,11 +37,13 @@ export type Database = {
           output_path?: string | null
           position: string
           status?: string
+          transcription_enabled?: boolean | null
           updated_at?: string
           user_id: string
           video_path: string
         }
         Update: {
+          captions_enabled?: boolean | null
           created_at?: string
           error_message?: string | null
           greyscale?: boolean
@@ -48,6 +53,7 @@ export type Database = {
           output_path?: string | null
           position?: string
           status?: string
+          transcription_enabled?: boolean | null
           updated_at?: string
           user_id?: string
           video_path?: string

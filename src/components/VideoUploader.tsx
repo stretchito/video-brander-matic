@@ -6,7 +6,7 @@ import { useMultiFileUpload } from '@/hooks/useMultiFileUpload';
 import { toast } from 'sonner';
 
 interface VideoUploaderProps {
-  onVideoSelect: (file: File, path: string) => void;
+  onVideoSelect: (file: File, path: string, options?: { transcription?: boolean; captions?: boolean }) => void;
 }
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
@@ -14,11 +14,14 @@ const MAX_TOTAL_SIZE = 500 * 1024 * 1024; // 500MB
 
 const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
   const [totalSize, setTotalSize] = useState(0);
+  const [fileOptions, setFileOptions] = useState<Record<string, { transcription: boolean; captions: boolean }>>({});
 
   const { uploadStates, handleUpload } = useMultiFileUpload({
     bucket: 'videos',
     fileTypes: ['video'],
-    onFileSelect: onVideoSelect
+    onFileSelect: (file, path) => {
+      onVideoSelect(file, path, fileOptions[file.name]);
+    }
   });
 
   const onDrop = async (acceptedFiles: File[]) => {
@@ -50,10 +53,54 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
     maxSize: MAX_FILE_SIZE
   });
 
+  const handleTranscriptionChange = (path: string, enabled: boolean) => {
+    const fileName = Object.keys(uploadStates).find(key => uploadStates[key].path === path);
+    if (fileName) {
+      setFileOptions(prev => ({
+        ...prev,
+        [fileName]: {
+          ...prev[fileName],
+          transcription: enabled
+        }
+      }));
+      // Update the file options in parent component
+      const file = uploadStates[fileName];
+      if (file) {
+        onVideoSelect(file as unknown as File, path, { 
+          transcription: enabled, 
+          captions: fileOptions[fileName]?.captions || false 
+        });
+      }
+    }
+  };
+
+  const handleCaptionsChange = (path: string, enabled: boolean) => {
+    const fileName = Object.keys(uploadStates).find(key => uploadStates[key].path === path);
+    if (fileName) {
+      setFileOptions(prev => ({
+        ...prev,
+        [fileName]: {
+          transcription: enabled ? true : (prev[fileName]?.transcription || false),
+          captions: enabled
+        }
+      }));
+      // Update the file options in parent component
+      const file = uploadStates[fileName];
+      if (file) {
+        onVideoSelect(file as unknown as File, path, { 
+          transcription: enabled ? true : (fileOptions[fileName]?.transcription || false), 
+          captions: enabled 
+        });
+      }
+    }
+  };
+
   const uploadedFiles = Object.entries(uploadStates).map(([name, state]) => ({
     name,
     path: state.path,
-    progress: state.progress
+    progress: state.progress,
+    transcriptionEnabled: fileOptions[name]?.transcription || false,
+    captionsEnabled: fileOptions[name]?.captions || false
   }));
 
   return (
@@ -77,7 +124,11 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
       </div>
 
       {uploadedFiles.length > 0 && (
-        <FileList files={uploadedFiles} />
+        <FileList 
+          files={uploadedFiles}
+          onTranscriptionChange={handleTranscriptionChange}
+          onCaptionsChange={handleCaptionsChange}
+        />
       )}
     </div>
   );

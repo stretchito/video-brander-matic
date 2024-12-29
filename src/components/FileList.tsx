@@ -3,15 +3,36 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
 import { ChevronDown, ChevronUp, CheckCircle2, XCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 interface FileListProps {
-  files: { name: string; path: string; progress: number }[];
+  files: { 
+    name: string; 
+    path: string; 
+    progress: number;
+    transcriptionEnabled?: boolean;
+    captionsEnabled?: boolean;
+  }[];
+  onTranscriptionChange?: (path: string, enabled: boolean) => void;
+  onCaptionsChange?: (path: string, enabled: boolean) => void;
 }
 
-const FileList = ({ files }: FileListProps) => {
+const FileList = ({ files, onTranscriptionChange, onCaptionsChange }: FileListProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const lastFile = files[files.length - 1];
+
+  const handleTranscriptionChange = (checked: boolean, path: string) => {
+    onTranscriptionChange?.(path, checked);
+  };
+
+  const handleCaptionsChange = (checked: boolean, path: string) => {
+    if (checked) {
+      // If captions are enabled, automatically enable transcription
+      onTranscriptionChange?.(path, true);
+    }
+    onCaptionsChange?.(path, checked);
+  };
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
@@ -58,6 +79,36 @@ const FileList = ({ files }: FileListProps) => {
                     file.progress > 0 && file.progress < 100 && "bg-primary"
                   )}
                 />
+                {file.progress === 100 && (
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`transcription-${file.path}`}
+                        checked={file.transcriptionEnabled}
+                        onCheckedChange={(checked) => handleTranscriptionChange(checked as boolean, file.path)}
+                      />
+                      <label 
+                        htmlFor={`transcription-${file.path}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Transcribe
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`captions-${file.path}`}
+                        checked={file.captionsEnabled}
+                        onCheckedChange={(checked) => handleCaptionsChange(checked as boolean, file.path)}
+                      />
+                      <label 
+                        htmlFor={`captions-${file.path}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Add Captions
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
