@@ -4,6 +4,7 @@ import FileList from './FileList';
 import { useMultiFileUpload } from '@/hooks/useMultiFileUpload';
 import { toast } from 'sonner';
 import UploadDropzone from './upload/UploadDropzone';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VideoUploaderProps {
   onVideoSelect: (file: File, path: string, options?: { transcription?: boolean; captions?: boolean }) => void;
@@ -19,8 +20,34 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
   const { uploadStates, handleUpload } = useMultiFileUpload({
     bucket: 'videos',
     fileTypes: ['video'],
-    onFileSelect: (file, path) => {
-      onVideoSelect(file, path, fileOptions[file.name]);
+    onFileSelect: async (file, path) => {
+      const options = fileOptions[file.name];
+      onVideoSelect(file, path, options);
+
+      if (options?.transcription) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('User not authenticated');
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('videos')
+            .getPublicUrl(path);
+
+          const { error } = await supabase.functions.invoke('transcribe-video', {
+            body: {
+              videoUrl: publicUrl,
+              jobId: path,
+              userId: user.id,
+            },
+          });
+
+          if (error) throw error;
+          toast.success('Transcription process started');
+        } catch (error) {
+          console.error('Transcription error:', error);
+          toast.error('Failed to start transcription process');
+        }
+      }
     }
   });
 
