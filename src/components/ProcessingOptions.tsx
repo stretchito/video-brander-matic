@@ -3,9 +3,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PositionType } from '@/types/videoProcessing';
 
 interface ProcessingOptionsProps {
-  onPositionChange: (position: string) => void;
+  onPositionChange: (position: PositionType) => void;
   onGreyscaleChange: (enabled: boolean) => void;
   onFormatChange: (format: string) => void;
 }

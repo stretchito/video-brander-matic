@@ -6,16 +6,8 @@ import { Transformation } from '@cloudinary/url-gen';
 import { grayscale } from '@cloudinary/url-gen/actions/effect';
 import { source } from '@cloudinary/url-gen/actions/overlay';
 import { Position } from '@cloudinary/url-gen/qualifiers/position';
-import { gravity } from '@cloudinary/url-gen/qualifiers';
-
-type PositionType = 'top-left' | 'top-right' | 'bottom' | 'center';
-type ProcessingStatus = 'waiting' | 'processing' | 'completed' | 'error';
-
-interface OverlayPosition {
-  gravity: gravity.Gravity;
-  x: number;
-  y: number;
-}
+import { PositionType, ProcessingStatus } from '@/types/videoProcessing';
+import { uploadToCloudinary, getOverlayPosition } from '@/utils/cloudinaryUtils';
 
 export const useVideoProcessing = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -29,41 +21,6 @@ export const useVideoProcessing = () => {
   const [currentAction, setCurrentAction] = useState('Waiting to start...');
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'ml_default');
-    
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error('Upload failed');
-    }
-
-    return await response.json();
-  };
-
-  const getOverlayPosition = (position: PositionType): OverlayPosition => {
-    switch (position) {
-      case 'top-left':
-        return { gravity: gravity.northwest(), x: 10, y: 10 };
-      case 'top-right':
-        return { gravity: gravity.northeast(), x: 10, y: 10 };
-      case 'bottom':
-        return { gravity: gravity.south(), x: 0, y: 10 };
-      case 'center':
-        return { gravity: gravity.center(), x: 0, y: 0 };
-      default:
-        return { gravity: gravity.northwest(), x: 10, y: 10 };
-    }
-  };
 
   const handleProcess = async () => {
     try {
@@ -176,7 +133,7 @@ export const useVideoProcessing = () => {
     currentAction,
     progress,
     isProcessing,
-    setPosition,
+    setPosition: (pos: PositionType) => setPosition(pos),
     setGreyscale,
     setFormat,
     handleProcess,
