@@ -12,7 +12,6 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -21,9 +20,32 @@ serve(async (req) => {
     const { videoUrl, jobId, userId } = await req.json();
     console.log('Starting transcription for video:', videoUrl);
 
+    // Initialize Supabase client
+    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
+
+    // Update job status
+    await supabase
+      .from('processing_jobs')
+      .update({
+        transcription_status: 'processing',
+        processing_steps: ['downloading_video', 'preparing_transcription'],
+        total_steps: 4,
+        completed_steps: 1
+      })
+      .eq('job_id', jobId);
+
     // Download video file
     const videoResponse = await fetch(videoUrl);
     const videoBlob = await videoResponse.blob();
+
+    // Update progress
+    await supabase
+      .from('processing_jobs')
+      .update({
+        completed_steps: 2,
+        processing_steps: ['downloading_video', 'preparing_transcription', 'transcribing']
+      })
+      .eq('job_id', jobId);
 
     // Create form data for OpenAI API
     const formData = new FormData();
@@ -51,22 +73,14 @@ serve(async (req) => {
     const transcription = await whisperResponse.text();
     console.log('Transcription received, length:', transcription.length);
 
-    // Initialize Supabase client
-    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
-
-    // Store transcription in database
-    const { error: dbError } = await supabase
-      .from('video_transcriptions')
-      .insert({
-        job_id: jobId,
-        user_id: userId,
-        transcription: transcription,
-      });
-
-    if (dbError) {
-      console.error('Database error:', dbError);
-      throw dbError;
-    }
+    // Update progress
+    await supabase
+      .from('processing_jobs')
+      .update({
+        completed_steps: 3,
+        processing_steps: ['downloading_video', 'preparing_transcription', 'transcribing', 'saving_results']
+      })
+      .eq('job_id', jobId);
 
     // Generate text file content
     const textFileContent = `Video Transcription\n\n${transcription}`;
@@ -90,6 +104,17 @@ serve(async (req) => {
       .from('videos')
       .getPublicUrl(`transcriptions/${jobId}.txt`);
 
+    // Update job with final status and URL
+    await supabase
+      .from('processing_jobs')
+      .update({
+        transcription_status: 'completed',
+        transcription_url: publicUrl,
+        completed_steps: 4,
+        processing_steps: ['downloading_video', 'preparing_transcription', 'transcribing', 'saving_results', 'completed']
+      })
+      .eq('job_id', jobId);
+
     console.log('Transcription process completed successfully');
 
     return new Response(
@@ -104,6 +129,19 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in transcribe-video function:', error);
+
+    // Update job with error status if possible
+    if (error.jobId) {
+      const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
+      await supabase
+        .from('processing_jobs')
+        .update({
+          transcription_status: 'error',
+          error_message: error.message
+        })
+        .eq('job_id', error.jobId);
+    }
+
     return new Response(
       JSON.stringify({ error: error.message }),
       {

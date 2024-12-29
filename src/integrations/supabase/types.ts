@@ -12,6 +12,7 @@ export type Database = {
       processing_jobs: {
         Row: {
           captions_enabled: boolean | null
+          completed_steps: number | null
           created_at: string
           error_message: string | null
           greyscale: boolean
@@ -21,8 +22,13 @@ export type Database = {
           output_format: string
           output_path: string | null
           position: string
+          processing_steps: Json | null
           status: string
+          total_steps: number | null
           transcription_enabled: boolean | null
+          transcription_status: string | null
+          transcription_summary: string | null
+          transcription_url: string | null
           updated_at: string
           user_id: string
           video_hash: string | null
@@ -30,6 +36,7 @@ export type Database = {
         }
         Insert: {
           captions_enabled?: boolean | null
+          completed_steps?: number | null
           created_at?: string
           error_message?: string | null
           greyscale?: boolean
@@ -39,8 +46,13 @@ export type Database = {
           output_format: string
           output_path?: string | null
           position: string
+          processing_steps?: Json | null
           status?: string
+          total_steps?: number | null
           transcription_enabled?: boolean | null
+          transcription_status?: string | null
+          transcription_summary?: string | null
+          transcription_url?: string | null
           updated_at?: string
           user_id: string
           video_hash?: string | null
@@ -48,6 +60,7 @@ export type Database = {
         }
         Update: {
           captions_enabled?: boolean | null
+          completed_steps?: number | null
           created_at?: string
           error_message?: string | null
           greyscale?: boolean
@@ -57,8 +70,13 @@ export type Database = {
           output_format?: string
           output_path?: string | null
           position?: string
+          processing_steps?: Json | null
           status?: string
+          total_steps?: number | null
           transcription_enabled?: boolean | null
+          transcription_status?: string | null
+          transcription_summary?: string | null
+          transcription_url?: string | null
           updated_at?: string
           user_id?: string
           video_hash?: string | null
