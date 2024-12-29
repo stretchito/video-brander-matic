@@ -12,7 +12,8 @@ export const useCloudinaryProcessing = () => {
     format: VideoFormat
   ) => {
     try {
-      const { cloudName } = getCloudinaryConfig();
+      // Get Cloudinary configuration
+      const config = await getCloudinaryConfig();
       
       // Upload logo first
       console.log('Uploading logo...');
@@ -37,7 +38,7 @@ export const useCloudinaryProcessing = () => {
 
       // Create final video URL
       const transformationString = transformations.join(',');
-      const finalVideoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/${transformationString}/${videoUpload.public_id}.${format}`;
+      const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/${videoUpload.public_id}.${format}`;
       
       console.log('Verifying processed video URL:', finalVideoUrl);
       
