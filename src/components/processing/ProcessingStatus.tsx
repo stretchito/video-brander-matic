@@ -40,10 +40,10 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
   // Parse video URLs from currentAction if it's a completed status
   const getVideoUrls = () => {
     if (status === 'completed' && currentAction.includes('http')) {
-      // Ensure we're getting the full Cloudinary URL
+      // Ensure we're getting the full Cloudinary URL with all transformations
       return currentAction.split(',')
         .map(url => url.trim())
-        .filter(url => url.startsWith('https://res.cloudinary.com'));
+        .filter(url => url.startsWith('https://res.cloudinary.com') && url.endsWith('.mp4'));
     }
     return [];
   };
