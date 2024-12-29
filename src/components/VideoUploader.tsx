@@ -26,6 +26,7 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
 
       if (options?.transcription) {
         try {
+          console.log('Starting transcription process for:', file.name);
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) throw new Error('User not authenticated');
 
@@ -33,7 +34,8 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
             .from('videos')
             .getPublicUrl(path);
 
-          const { error } = await supabase.functions.invoke('transcribe-video', {
+          console.log('Invoking transcribe-video function with URL:', publicUrl);
+          const { data, error } = await supabase.functions.invoke('transcribe-video', {
             body: {
               videoUrl: publicUrl,
               jobId: path,
@@ -42,6 +44,7 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
           });
 
           if (error) throw error;
+          console.log('Transcription response:', data);
           toast.success('Transcription process started');
         } catch (error) {
           console.error('Transcription error:', error);
