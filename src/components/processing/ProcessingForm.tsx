@@ -6,7 +6,7 @@ import ProcessingOptions from '../ProcessingOptions';
 import ProcessingStatus from './ProcessingStatus';
 import UploadSection from './UploadSection';
 import RequirementsCheck from './RequirementsCheck';
-import { PositionType } from '@/types/videoProcessing';
+import { PositionType, VideoFormat } from '@/types/videoProcessing';
 
 interface ProcessingFormProps {
   videoFiles: { file: File; path: string }[];
@@ -14,7 +14,7 @@ interface ProcessingFormProps {
   logoPath: string;
   position: PositionType;
   greyscale: boolean;
-  format: 'mp4' | 'mov' | 'avi' | 'webm';
+  format: VideoFormat;
   status: 'waiting' | 'processing' | 'completed' | 'error';
   currentAction: string;
   progress: number;
@@ -23,7 +23,7 @@ interface ProcessingFormProps {
   onLogoSelect: (file: File, path: string) => void;
   onPositionChange: (position: PositionType) => void;
   onGreyscaleChange: (enabled: boolean) => void;
-  onFormatChange: (format: 'mp4' | 'mov' | 'avi' | 'webm') => void;
+  onFormatChange: (format: VideoFormat) => void;
   onProcess: () => Promise<void>;
 }
 
@@ -46,38 +46,42 @@ const ProcessingForm = ({
   onProcess
 }: ProcessingFormProps) => {
   return (
-    <div className="space-y-8">
-      <UploadSection
-        onVideoSelect={onVideoSelect}
-        onLogoSelect={onLogoSelect}
-      />
-
-      <Card className="w-full">
-        <ProcessingOptions
-          onPositionChange={onPositionChange}
-          onGreyscaleChange={onGreyscaleChange}
-          onFormatChange={onFormatChange}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="space-y-4">
+        <UploadSection
+          onVideoSelect={onVideoSelect}
+          onLogoSelect={onLogoSelect}
         />
-      </Card>
-
-      <div className="flex justify-center">
-        <TooltipProvider>
-          <RequirementsCheck
-            videoFiles={videoFiles}
-            logoFile={logoFile}
-            position={position}
-            format={format}
-            isProcessing={isProcessing}
-            onProcess={onProcess}
-          />
-        </TooltipProvider>
       </div>
 
-      <ProcessingStatus
-        status={status}
-        currentAction={currentAction}
-        progress={progress}
-      />
+      <div className="space-y-4">
+        <Card className="w-full">
+          <ProcessingOptions
+            onPositionChange={onPositionChange}
+            onGreyscaleChange={onGreyscaleChange}
+            onFormatChange={onFormatChange}
+          />
+        </Card>
+
+        <div className="flex justify-center">
+          <TooltipProvider>
+            <RequirementsCheck
+              videoFiles={videoFiles}
+              logoFile={logoFile}
+              position={position}
+              format={format}
+              isProcessing={isProcessing}
+              onProcess={onProcess}
+            />
+          </TooltipProvider>
+        </div>
+
+        <ProcessingStatus
+          status={status}
+          currentAction={currentAction}
+          progress={progress}
+        />
+      </div>
     </div>
   );
 };

@@ -6,8 +6,7 @@ import { PositionType, ProcessingStatus, VideoFormat } from '@/types/videoProces
 import { uploadToCloudinary, getOverlayPosition } from '@/utils/cloudinaryUtils';
 
 export const useVideoProcessing = () => {
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoPath, setVideoPath] = useState<string>('');
+  const [videoFiles, setVideoFiles] = useState<{ file: File; path: string }[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPath, setLogoPath] = useState<string>('');
   const [position, setPosition] = useState<PositionType>('top-right');
@@ -20,7 +19,7 @@ export const useVideoProcessing = () => {
 
   const handleProcess = async () => {
     try {
-      if (!videoFile || !logoFile) {
+      if (videoFiles.length === 0 || !logoFile) {
         toast.error('Please upload both video and logo files');
         return;
       }
@@ -30,55 +29,58 @@ export const useVideoProcessing = () => {
       setCurrentAction('Uploading files to Cloudinary...');
       setProgress(10);
 
-      // Upload video and logo to Cloudinary
-      const [videoUpload, logoUpload] = await Promise.all([
-        uploadToCloudinary(videoFile, 'video'),
-        uploadToCloudinary(logoFile, 'image')
-      ]);
+      // Upload logo first
+      const logoUpload = await uploadToCloudinary(logoFile, 'image');
+      setProgress(30);
 
-      setProgress(50);
-      setCurrentAction('Creating processing job...');
+      // Process each video
+      for (const [index, { file }] of videoFiles.entries()) {
+        setCurrentAction(`Processing video ${index + 1} of ${videoFiles.length}`);
+        
+        // Upload video to Cloudinary
+        const videoUpload = await uploadToCloudinary(file, 'video');
+        setProgress(50 + (index * 30 / videoFiles.length));
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
 
-      // Create the transformation string manually instead of using the SDK
-      const transformations = [];
-      
-      if (greyscale) {
-        transformations.push('e_grayscale');
-      }
+        // Create transformation string
+        const transformations = [];
+        if (greyscale) {
+          transformations.push('e_grayscale');
+        }
 
-      // Add logo overlay with position
-      const overlayPosition = getOverlayPosition(position);
-      const overlayTransform = `l_${logoUpload.public_id},g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y}`;
-      transformations.push(overlayTransform);
+        // Add logo overlay with position
+        const overlayPosition = getOverlayPosition(position);
+        const overlayTransform = `l_${logoUpload.public_id},g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y}`;
+        transformations.push(overlayTransform);
 
-      // Create the final video URL
-      const transformationString = transformations.join(',');
-      const finalVideoUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload/${transformationString}/${videoUpload.public_id}.${format}`;
+        // Create final video URL
+        const transformationString = transformations.join(',');
+        const finalVideoUrl = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/video/upload/${transformationString}/${videoUpload.public_id}.${format}`;
 
-      // Store job in Supabase
-      const { data: job, error: jobError } = await supabase
-        .from('processing_jobs')
-        .insert({
-          user_id: user.id,
-          video_path: videoUpload.public_id,
-          logo_path: logoUpload.public_id,
-          position,
-          greyscale,
-          output_format: format,
-          status: 'completed',
-          output_path: finalVideoUrl
-        })
-        .select()
-        .single();
+        // Store job in Supabase
+        const { error: jobError } = await supabase
+          .from('processing_jobs')
+          .insert({
+            user_id: user.id,
+            video_path: videoUpload.public_id,
+            logo_path: logoUpload.public_id,
+            position,
+            greyscale,
+            output_format: format,
+            status: 'completed',
+            output_path: finalVideoUrl
+          });
 
-      if (jobError) {
-        throw jobError;
+        if (jobError) {
+          throw jobError;
+        }
+
+        setProgress(70 + (index * 30 / videoFiles.length));
       }
 
       setProgress(100);
@@ -98,8 +100,7 @@ export const useVideoProcessing = () => {
   };
 
   const handleVideoSelect = (file: File, path: string) => {
-    setVideoFile(file);
-    setVideoPath(path);
+    setVideoFiles(prev => [...prev, { file, path }]);
     toast.success('Video selected successfully');
   };
 
@@ -110,8 +111,7 @@ export const useVideoProcessing = () => {
   };
 
   return {
-    videoFile,
-    videoPath,
+    videoFiles,
     logoFile,
     logoPath,
     position,
