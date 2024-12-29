@@ -6,9 +6,9 @@ export const getOverlayPosition = (position: PositionType) => {
     case 'top-left':
       return { gravity: 'north_west', x: 80, y: 108 };
     case 'top-right':
-      return { gravity: 'north_east', x: -120, y: 108 }; // Negative x for right alignment
+      return { gravity: 'north_east', x: -120, y: 108 }; // Negative x moves from right edge
     case 'bottom':
-      return { gravity: 'south', x: 0, y: -320 }; // Negative y for bottom alignment
+      return { gravity: 'south', x: 0, y: -320 }; // Negative y moves up from bottom
     case 'center':
       return { gravity: 'center', x: 0, y: 0 };
     default:

@@ -28,7 +28,7 @@ export const useCloudinaryProcessing = () => {
       // Create transformation string
       const transformations = [];
       
-      // Add greyscale effect to video if enabled (before logo overlay)
+      // Add greyscale effect first (before logo overlay)
       if (greyscale) {
         transformations.push('e_grayscale');
       }
@@ -37,16 +37,15 @@ export const useCloudinaryProcessing = () => {
       const overlayPosition = getOverlayPosition(position);
       
       // Add logo overlay with position and size constraints
-      // h_100,w_300,c_fit ensures logo maintains aspect ratio within limits
-      const overlayTransform = `l_${logoUpload.public_id}/h_100,w_300,c_fit/g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y},fl_layer_apply,fl_relative`;
+      // Note: The order here is important - we separate transformations with forward slashes
+      const overlayTransform = `l_${logoUpload.public_id}/h_100,w_300,c_fit/g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y},fl_layer_apply`;
       transformations.push(overlayTransform);
 
       // Create final video URL with all transformations
       const transformationString = transformations.join('/');
-      const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/v${videoUpload.version}/${videoUpload.public_id}.${format}`;
-      
-      console.log('Final Processing...');
       console.log('Transformation string:', transformationString);
+      
+      const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/v${videoUpload.version}/${videoUpload.public_id}.${format}`;
       
       // Verify video URL is accessible with retries
       let retryCount = 0;
