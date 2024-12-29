@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 interface ThumbnailGeneratorProps {
   videoUrls: string[];
   thumbnails: Record<string, string>;
-  setThumbnails: (thumbnails: Record<string, string>) => void;
+  setThumbnails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
 
 const ThumbnailGenerator = ({ videoUrls, thumbnails, setThumbnails }: ThumbnailGeneratorProps) => {
@@ -25,9 +25,14 @@ const ThumbnailGenerator = ({ videoUrls, thumbnails, setThumbnails }: ThumbnailG
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           const ctx = canvas.getContext('2d');
-          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const thumbnail = canvas.toDataURL('image/jpeg');
-          setThumbnails(prev => ({ ...prev, [url]: thumbnail }));
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const thumbnail = canvas.toDataURL('image/jpeg');
+            setThumbnails(prev => ({
+              ...prev,
+              [url]: thumbnail
+            }));
+          }
         });
       }
     });
