@@ -49,13 +49,7 @@ const ProcessingStatus = ({
     if (status === 'completed' && currentAction.includes('http')) {
       return currentAction.split(',')
         .map(url => url.trim())
-        .filter(url => {
-          const isCloudinaryUrl = url.startsWith('https://res.cloudinary.com');
-          const hasTransformations = url.includes('e_saturation') && 
-                                   url.includes('fl_layer_apply');
-          const isVideoFile = url.endsWith('.mp4');
-          return isCloudinaryUrl && hasTransformations && isVideoFile;
-        });
+        .filter(url => url.startsWith('https://res.cloudinary.com') && url.endsWith('.mp4'));
     }
     return [];
   };

@@ -10,11 +10,13 @@ export const useVideoProcessing = () => {
   const processingStatus = useProcessingStatus();
   const { processVideo } = useCloudinaryProcessing();
   const [processedCount, setProcessedCount] = useState(0);
+  const [processedUrls, setProcessedUrls] = useState<string[]>([]);
 
   // Clear videos on page load/refresh
   useEffect(() => {
     videoState.setVideoFiles([]);
     setProcessedCount(0);
+    setProcessedUrls([]);
   }, []);
 
   const handleProcess = async () => {
@@ -27,8 +29,8 @@ export const useVideoProcessing = () => {
       processingStatus.setIsProcessing(true);
       processingStatus.updateStatus('processing', 'Preparing files...', 10);
 
-      const processedUrls: string[] = [];
       setProcessedCount(0);
+      setProcessedUrls([]);
 
       for (const [index, { file }] of videoState.videoFiles.entries()) {
         processingStatus.updateStatus(
@@ -56,8 +58,16 @@ export const useVideoProcessing = () => {
           videoState.format
         );
 
-        processedUrls.push(finalVideoUrl);
+        // Add the new URL to our processed URLs array
+        setProcessedUrls(prev => [...prev, finalVideoUrl]);
         setProcessedCount(prev => prev + 1);
+
+        // Update the current action to show all processed URLs
+        processingStatus.updateStatus(
+          index === videoState.videoFiles.length - 1 ? 'completed' : 'processing',
+          processedUrls.join(','),
+          Math.round((index + 1) / videoState.videoFiles.length * 100)
+        );
 
         const { error: jobError } = await supabase
           .from('processing_jobs')
