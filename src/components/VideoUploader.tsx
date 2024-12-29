@@ -1,14 +1,10 @@
 import React from 'react';
-import { useDropzone } from 'react-dropzone';
-import { toast } from 'sonner';
 import FileList from './FileList';
 import FileSizeValidator from './upload/FileSizeValidator';
 import FileOptionsManager from './upload/FileOptionsManager';
 import UploadDropzone from './upload/UploadDropzone';
 import VideoUploaderState from './upload/VideoUploaderState';
-
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
-const MAX_TOTAL_SIZE = 500 * 1024 * 1024; // 500MB
+import { useVideoUploader } from './upload/video/useVideoUploader';
 
 interface VideoUploaderProps {
   onVideoSelect: (file: File, path: string, options?: { transcription?: boolean; captions?: boolean }) => void;
@@ -29,39 +25,12 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
         setFileOptions
       }) => {
         const isProcessing = Object.keys(uploadStates).length > 0;
-
-        const { getRootProps, getInputProps, isDragActive } = useDropzone({
-          onDrop: async (files) => {
-            try {
-              // Prevent processing if files are already being processed
-              if (isProcessing) {
-                console.log('Files are currently being processed, ignoring new drop');
-                toast.warning('Please wait for current files to finish processing');
-                return;
-              }
-              
-              console.log('Files dropped:', files.map(f => ({ name: f.name, size: f.size })));
-              
-              // Clear previous files before setting new ones to prevent duplicates
-              setDroppedFiles([]);
-              setFileOptions({});
-              
-              // Set new files after a short delay to ensure cleanup is complete
-              setTimeout(() => {
-                setDroppedFiles(files);
-              }, 0);
-            } catch (error) {
-              console.error('Error in onDrop:', error);
-              toast.error('Error processing dropped files');
-            }
-          },
-          accept: {
-            'video/*': ['.mp4', '.mov', '.avi', '.webm']
-          },
-          multiple: true,
-          maxSize: MAX_FILE_SIZE,
-          disabled: isProcessing
-        });
+        
+        const { getRootProps, getInputProps, isDragActive } = useVideoUploader(
+          isProcessing,
+          setDroppedFiles,
+          setFileOptions
+        );
 
         return (
           <div className="space-y-4">
@@ -69,8 +38,8 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
               <FileSizeValidator
                 files={droppedFiles}
                 currentTotalSize={totalSize}
-                maxFileSize={MAX_FILE_SIZE}
-                maxTotalSize={MAX_TOTAL_SIZE}
+                maxFileSize={25 * 1024 * 1024}
+                maxTotalSize={500 * 1024 * 1024}
                 onValidationPass={handleValidFiles}
               />
             )}
