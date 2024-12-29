@@ -14,12 +14,23 @@ const FileProcessor = ({ file, path, options, onVideoSelect, setProcessingFiles 
 
   React.useEffect(() => {
     const processFile = async () => {
-      if (!file || setProcessingFiles.has(file.name)) {
-        console.log('File already being processed or invalid:', file?.name);
+      // Check if file exists first
+      if (!file) {
+        console.log('Invalid file');
         return;
       }
 
-      setProcessingFiles(prev => new Set(prev).add(file.name));
+      // Get current processing files and check if this file is already being processed
+      setProcessingFiles(prev => {
+        if (prev.has(file.name)) {
+          console.log('File already being processed:', file.name);
+          return prev;
+        }
+
+        const newSet = new Set(prev);
+        newSet.add(file.name);
+        return newSet;
+      });
 
       try {
         await onVideoSelect(file, path, options);
