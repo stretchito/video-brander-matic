@@ -17,6 +17,7 @@ export const useStorageFiles = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setFiles([]);
+        setLoading(false);
         return;
       }
 
@@ -40,7 +41,7 @@ export const useStorageFiles = () => {
       })));
     } catch (error) {
       console.error('Error loading files:', error);
-      toast.error('Failed to load files');
+      toast.error('Failed to load files. Please try refreshing the page.');
     } finally {
       setLoading(false);
     }
@@ -61,7 +62,7 @@ export const useStorageFiles = () => {
       toast.success('File deleted successfully');
     } catch (error) {
       console.error('Error deleting file:', error);
-      toast.error('Failed to delete file');
+      toast.error('Failed to delete file. Please try again.');
     }
   };
 
@@ -78,18 +79,12 @@ export const useStorageFiles = () => {
           .remove([filePath]);
       });
 
-      const results = await Promise.all(deletePromises);
-      const errors = results.filter(result => result.error);
-
-      if (errors.length > 0) {
-        throw new Error(`Failed to delete ${errors.length} files`);
-      }
-
+      await Promise.allSettled(deletePromises);
       setFiles([]);
-      toast.success('All files deleted successfully');
+      toast.success('Files deleted successfully');
     } catch (error) {
       console.error('Error deleting all files:', error);
-      toast.error('Failed to delete all files');
+      toast.error('Failed to delete all files. Please try again.');
     }
   };
 
@@ -101,6 +96,7 @@ export const useStorageFiles = () => {
     files,
     loading,
     deleteFile,
-    deleteAllFiles
+    deleteAllFiles,
+    refreshFiles: loadFiles
   };
 };
