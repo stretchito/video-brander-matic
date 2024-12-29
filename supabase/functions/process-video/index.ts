@@ -1,28 +1,11 @@
-import { createClient } from "https://esm.sh/v2/@supabase/supabase-js@2.7.1";
-import { v2 as cloudinary } from "https://esm.sh/cloudinary@1.41.0";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
-};
-
-interface ProcessVideoPayload {
-  jobId: string;
-  videoPath: string;
-  logoPath: string;
-  position: string;
-  greyscale: boolean;
-  outputFormat: string;
-}
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: Deno.env.get('CLOUDINARY_CLOUD_NAME'),
-  api_key: Deno.env.get('CLOUDINARY_API_KEY'),
-  api_secret: Deno.env.get('CLOUDINARY_API_SECRET'),
-});
+import { ProcessVideoPayload, corsHeaders } from './types.ts';
+import { getSignedUrl, updateJobStatus } from './supabase-helpers.ts';
+import { 
+  uploadToCloudinary, 
+  processVideo, 
+  deleteFromCloudinary, 
+  getOverlayPosition 
+} from './cloudinary.ts';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -43,11 +26,7 @@ Deno.serve(async (req) => {
 
   try {
     console.log('Starting video processing request');
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
+    
     // Parse request body
     const payload: ProcessVideoPayload = await req.json();
     console.log('Received payload:', JSON.stringify(payload));
@@ -56,27 +35,27 @@ Deno.serve(async (req) => {
 
     try {
       // Update job status to processing
-      await updateJobStatus(supabaseClient, jobId, 'processing');
+      await updateJobStatus(jobId, 'processing');
       console.log('Updated job status to processing');
 
       // Get signed URLs for video and logo
-      const videoUrl = await getSignedUrl(supabaseClient, 'videos', videoPath);
-      const logoUrl = await getSignedUrl(supabaseClient, 'logos', logoPath);
+      const videoUrl = await getSignedUrl('videos', videoPath);
+      const logoUrl = await getSignedUrl('logos', logoPath);
 
       // Upload video to Cloudinary
       console.log('Uploading video to Cloudinary...');
-      const videoUpload = await cloudinary.uploader.upload(videoUrl, {
+      const videoUpload = await uploadToCloudinary(videoUrl, {
         resource_type: 'video',
         public_id: `temp_${jobId}_video`,
       });
 
       // Upload logo to Cloudinary
       console.log('Uploading logo to Cloudinary...');
-      const logoUpload = await cloudinary.uploader.upload(logoUrl, {
+      const logoUpload = await uploadToCloudinary(logoUrl, {
         public_id: `temp_${jobId}_logo`,
       });
 
-      // Define transformation based on position and greyscale
+      // Define transformations based on position and greyscale
       const transformations = [];
       
       // Add greyscale if enabled
@@ -93,21 +72,16 @@ Deno.serve(async (req) => {
 
       // Process video with Cloudinary
       console.log('Processing video with Cloudinary...');
-      const result = await cloudinary.video.upload(videoUpload.secure_url, {
-        resource_type: 'video',
-        public_id: `processed_${jobId}`,
-        transformation: transformations,
-        format: outputFormat,
-      });
+      const result = await processVideo(videoUpload.public_id, transformations, outputFormat);
 
       // Clean up temporary uploads
       await Promise.all([
-        cloudinary.uploader.destroy(`temp_${jobId}_video`),
-        cloudinary.uploader.destroy(`temp_${jobId}_logo`),
+        deleteFromCloudinary(`temp_${jobId}_video`),
+        deleteFromCloudinary(`temp_${jobId}_logo`),
       ]);
 
       // Update job as completed
-      await updateJobStatus(supabaseClient, jobId, 'completed', result.secure_url);
+      await updateJobStatus(jobId, 'completed', result.secure_url);
       console.log('Job completed successfully');
 
       return new Response(
@@ -126,7 +100,7 @@ Deno.serve(async (req) => {
 
     } catch (error) {
       console.error('Processing error:', error);
-      await updateJobStatus(supabaseClient, jobId, 'error', undefined, error.message);
+      await updateJobStatus(jobId, 'error', undefined, error.message);
       throw error;
     }
 
@@ -147,58 +121,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-// Helper function to get signed URLs from Supabase
-async function getSignedUrl(supabaseClient: any, bucket: string, path: string) {
-  console.log(`Getting signed URL for ${bucket}/${path}`);
-  const { data: url, error } = await supabaseClient.storage
-    .from(bucket)
-    .createSignedUrl(path, 60);
-  
-  if (error) {
-    console.error('Error getting signed URL:', error);
-    throw error;
-  }
-  
-  return url.signedUrl;
-}
-
-// Helper function to update job status
-async function updateJobStatus(
-  supabaseClient: any, 
-  jobId: string, 
-  status: string, 
-  outputPath?: string, 
-  errorMessage?: string
-) {
-  console.log(`Updating job ${jobId} status to ${status}`);
-  const updates: any = { status };
-  if (outputPath) updates.output_path = outputPath;
-  if (errorMessage) updates.error_message = errorMessage;
-
-  const { error } = await supabaseClient
-    .from('processing_jobs')
-    .update(updates)
-    .eq('id', jobId);
-
-  if (error) {
-    console.error('Error updating job status:', error);
-    throw error;
-  }
-}
-
-// Helper function to get overlay position parameters for Cloudinary
-function getOverlayPosition(position: string) {
-  switch (position) {
-    case 'top-left':
-      return { gravity: 'north_west', x: 10, y: 10 };
-    case 'top-right':
-      return { gravity: 'north_east', x: 10, y: 10 };
-    case 'bottom':
-      return { gravity: 'south', y: 10 };
-    case 'center':
-      return { gravity: 'center' };
-    default:
-      return { gravity: 'north_west', x: 10, y: 10 };
-  }
-}
