@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import ProcessingForm from '@/components/processing/ProcessingForm';
 import { useVideoProcessing } from '@/hooks/useVideoProcessing';
-import { PositionType } from '@/types/videoProcessing';
+import { PositionType, VideoFormat } from '@/types/videoProcessing';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -36,9 +36,13 @@ const Index = () => {
     navigate('/login');
   };
 
-  // Create a handler that ensures the position is of type PositionType
-  const handlePositionChange = (pos: string) => {
-    setPosition(pos as PositionType);
+  // Create handlers that ensure proper typing
+  const handlePositionChange = (pos: PositionType) => {
+    setPosition(pos);
+  };
+
+  const handleFormatChange = (newFormat: VideoFormat) => {
+    setFormat(newFormat);
   };
 
   return (
@@ -72,7 +76,7 @@ const Index = () => {
           onLogoSelect={handleLogoSelect}
           onPositionChange={handlePositionChange}
           onGreyscaleChange={setGreyscale}
-          onFormatChange={setFormat}
+          onFormatChange={handleFormatChange}
           onProcess={handleProcess}
         />
       </div>
