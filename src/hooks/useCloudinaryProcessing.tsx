@@ -31,9 +31,9 @@ export const useCloudinaryProcessing = () => {
       // Build transformation array
       const transformations = [];
       
-      // Add greyscale effect if enabled (must be first)
+      // Add saturation effect if greyscale is enabled (must be first)
       if (greyscale) {
-        transformations.push('e_grayscale');
+        transformations.push('e_saturation:10');
       }
       
       // Add logo overlay with correct positioning and size constraints
