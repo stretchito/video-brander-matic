@@ -37,13 +37,17 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
     return 'bg-[#33C3F0]';
   };
 
-  // Parse video URLs from currentAction if it's a completed status
   const getVideoUrls = () => {
     if (status === 'completed' && currentAction.includes('http')) {
-      // Ensure we're getting the full Cloudinary URL with all transformations
       return currentAction.split(',')
         .map(url => url.trim())
-        .filter(url => url.startsWith('https://res.cloudinary.com') && url.endsWith('.mp4'));
+        .filter(url => {
+          const isCloudinaryUrl = url.startsWith('https://res.cloudinary.com');
+          const hasTransformations = url.includes('e_saturation') && 
+                                   url.includes('fl_layer_apply');
+          const isVideoFile = url.endsWith('.mp4');
+          return isCloudinaryUrl && hasTransformations && isVideoFile;
+        });
     }
     return [];
   };

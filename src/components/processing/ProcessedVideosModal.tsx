@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ExternalLink } from 'lucide-react';
+import { PlayCircle } from 'lucide-react';
 
 interface ProcessedVideosModalProps {
   isOpen: boolean;
@@ -22,7 +22,7 @@ const ProcessedVideosModal = ({ isOpen, onClose, videoUrls }: ProcessedVideosMod
         <DialogHeader>
           <DialogTitle>Processed Videos</DialogTitle>
           <DialogDescription>
-            Click the buttons below to open your processed videos
+            Click the buttons below to play your processed videos
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -35,8 +35,8 @@ const ProcessedVideosModal = ({ isOpen, onClose, videoUrls }: ProcessedVideosMod
                 onClick={() => window.open(url, '_blank')}
                 className="flex items-center gap-2"
               >
-                <ExternalLink className="w-4 h-4" />
-                Open Video
+                <PlayCircle className="w-4 h-4" />
+                Play Video
               </Button>
             </div>
           ))}
