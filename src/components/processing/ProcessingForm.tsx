@@ -6,7 +6,6 @@ import ProcessingOptions from '../ProcessingOptions';
 import ProcessingStatus from './ProcessingStatus';
 import UploadSection from './UploadSection';
 import RequirementsCheck from './RequirementsCheck';
-import StorageManager from '../StorageManager';
 import { PositionType, VideoFormat } from '@/types/videoProcessing';
 
 interface ProcessingFormProps {
@@ -48,10 +47,6 @@ const ProcessingForm = ({
 }: ProcessingFormProps) => {
   return (
     <>
-      <Card className="w-full h-full">
-        <StorageManager />
-      </Card>
-
       <Card className="w-full h-full">
         <UploadSection
           type="video"
