@@ -9,7 +9,7 @@ interface ProcessingProgressBarProps {
 
 const ProcessingProgressBar = ({ status, progress }: ProcessingProgressBarProps) => {
   const getProgressColor = () => {
-    if (status === 'waiting') return 'bg-transparent';
+    if (status === 'waiting') return 'bg-gray-200';
     if (progress === 100 && status === 'completed') return 'bg-green-500';
     if (status === 'error') return 'bg-red-500';
     return 'bg-[#33C3F0]';

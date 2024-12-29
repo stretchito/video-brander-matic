@@ -39,6 +39,19 @@ const StatusCard = ({
     }
   };
 
+  const getDisplayText = () => {
+    if (showSuccessMessage) return 'Success!!';
+    if (title === 'Status') return status;
+    
+    // For Current Action, show appropriate status message
+    if (currentAction.startsWith('https://')) {
+      return status === 'completed' 
+        ? 'Processing complete!' 
+        : 'Processing video...';
+    }
+    return currentAction;
+  };
+
   return (
     <Card className={`w-full md:w-1/2 ${title === 'Status' ? getStatusColor() : ''} transition-colors duration-300`}>
       <CardHeader>
@@ -46,20 +59,16 @@ const StatusCard = ({
       </CardHeader>
       <CardContent>
         <p className="font-medium">
-          {showSuccessMessage ? (
-            <span className="text-green-600 font-bold">Success!!</span>
-          ) : (
-            title === 'Status' ? status : currentAction
-          )}
+          {getDisplayText()}
         </p>
         {hasProcessedVideos && title !== 'Status' && (
           <div className="mt-2">
             <Button
               onClick={onViewVideos}
               variant="outline"
-              className="w-full flex items-center gap-2 truncate"
+              className="w-full flex items-center gap-2"
             >
-              <Video className="w-4 h-4 shrink-0" />
+              <Video className="w-4 h-4" />
               <span className="truncate">View Videos ({processedCount}/{totalVideos})</span>
             </Button>
           </div>
