@@ -27,37 +27,31 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
         setDroppedFiles,
         setFileOptions
       }) => {
+        const isProcessing = Object.keys(uploadStates).length > 0;
+
         const { getRootProps, getInputProps, isDragActive } = useDropzone({
           onDrop: async (files) => {
             // Prevent processing if files are already being processed
-            if (Object.keys(uploadStates).length > 0) {
+            if (isProcessing) {
+              console.log('Files are currently being processed, ignoring new drop');
               return;
             }
             
-            // Clear previous files
-            setDroppedFiles([]);
-            
-            // Log dropped files
+            // Log dropped files for debugging
             console.log('Dropped files:', files.map(f => ({ 
               name: f.name, 
               size: f.size / (1024 * 1024) + 'MB' 
             })));
 
-            // Set new files with a delay to prevent state update loop
-            setTimeout(() => {
-              // Only set files if there are no active uploads
-              if (Object.keys(uploadStates).length === 0) {
-                setDroppedFiles(files);
-              }
-            }, 100);
+            // Clear previous files and set new ones
+            setDroppedFiles(files);
           },
           accept: {
             'video/*': ['.mp4', '.mov', '.avi', '.webm']
           },
           multiple: true,
           maxSize: MAX_FILE_SIZE,
-          // Prevent drag and drop while files are being processed
-          disabled: Object.keys(uploadStates).length > 0
+          disabled: isProcessing
         });
 
         const uploadedFiles = Object.entries(uploadStates).map(([name, state]) => ({
@@ -70,7 +64,7 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
 
         return (
           <div className="space-y-4">
-            {droppedFiles.length > 0 && Object.keys(uploadStates).length === 0 && (
+            {droppedFiles.length > 0 && !isProcessing && (
               <FileSizeValidator
                 files={droppedFiles}
                 currentTotalSize={totalSize}
