@@ -19,6 +19,9 @@ const FileSizeValidator = ({
   useEffect(() => {
     const validateFiles = () => {
       try {
+        // Only validate if there are files to validate
+        if (files.length === 0) return;
+
         console.log('Validating files:', files.map(f => ({ name: f.name, size: f.size })));
         console.log('Current total size:', currentTotalSize);
 
@@ -62,10 +65,9 @@ const FileSizeValidator = ({
       }
     };
 
-    if (files.length > 0) {
-      validateFiles();
-    }
-  }, [files, currentTotalSize, maxFileSize, maxTotalSize, onValidationPass]);
+    // Only run validation once when files change
+    validateFiles();
+  }, [files]); // Only depend on files array, remove other dependencies
 
   return null;
 };
