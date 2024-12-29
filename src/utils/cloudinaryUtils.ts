@@ -21,6 +21,20 @@ export const getOverlayPosition = (position: PositionType): OverlayPosition => {
   }
 };
 
+export const generateSignature = (timestamp: number, params: Record<string, any> = {}) => {
+  const crypto = require('crypto');
+  const allParams = { timestamp, ...params };
+  
+  // Sort parameters alphabetically
+  const sortedKeys = Object.keys(allParams).sort();
+  const sortedParams = sortedKeys.map(key => `${key}=${allParams[key]}`).join('&');
+  
+  return crypto
+    .createHash('sha256')
+    .update(sortedParams + apiSecret)
+    .digest('hex');
+};
+
 export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
   // Get Cloudinary configuration from Supabase Edge Function
   const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
@@ -29,10 +43,14 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     throw new Error('Could not fetch Cloudinary configuration');
   }
 
+  const timestamp = Math.round(new Date().getTime() / 1000);
+  const signature = generateSignature(timestamp);
+
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', 'ml_default');
+  formData.append('timestamp', timestamp.toString());
   formData.append('api_key', config.apiKey);
+  formData.append('signature', signature);
   
   if (!config.cloudName) {
     throw new Error('Cloudinary credentials are not properly configured');
@@ -48,6 +66,7 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
 
   if (!response.ok) {
     const errorData = await response.json();
+    console.error('Cloudinary upload error:', errorData);
     throw new Error(`Upload failed: ${errorData.error?.message || 'Unknown error'}`);
   }
 
