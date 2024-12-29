@@ -29,19 +29,35 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
       }) => {
         const { getRootProps, getInputProps, isDragActive } = useDropzone({
           onDrop: async (files) => {
-            // Clear previous files to prevent re-upload
+            // Prevent processing if files are already being processed
+            if (Object.keys(uploadStates).length > 0) {
+              return;
+            }
+            
+            // Clear previous files
             setDroppedFiles([]);
-            console.log('Dropped files:', files.map(f => ({ name: f.name, size: f.size / (1024 * 1024) + 'MB' })));
-            // Set new files after a short delay to prevent state update loop
+            
+            // Log dropped files
+            console.log('Dropped files:', files.map(f => ({ 
+              name: f.name, 
+              size: f.size / (1024 * 1024) + 'MB' 
+            })));
+
+            // Set new files with a delay to prevent state update loop
             setTimeout(() => {
-              setDroppedFiles(files);
+              // Only set files if there are no active uploads
+              if (Object.keys(uploadStates).length === 0) {
+                setDroppedFiles(files);
+              }
             }, 100);
           },
           accept: {
             'video/*': ['.mp4', '.mov', '.avi', '.webm']
           },
           multiple: true,
-          maxSize: MAX_FILE_SIZE
+          maxSize: MAX_FILE_SIZE,
+          // Prevent drag and drop while files are being processed
+          disabled: Object.keys(uploadStates).length > 0
         });
 
         const uploadedFiles = Object.entries(uploadStates).map(([name, state]) => ({
@@ -54,7 +70,7 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
 
         return (
           <div className="space-y-4">
-            {droppedFiles.length > 0 && (
+            {droppedFiles.length > 0 && Object.keys(uploadStates).length === 0 && (
               <FileSizeValidator
                 files={droppedFiles}
                 currentTotalSize={totalSize}
