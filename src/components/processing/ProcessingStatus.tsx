@@ -72,6 +72,8 @@ const ProcessingStatus = ({
         onClose={() => setIsModalOpen(false)}
         videoUrls={videoUrls}
         processedCount={processedCount}
+        status={status}
+        progress={progress}
       />
     </div>
   );
