@@ -25,17 +25,16 @@ const VideoUploaderState = ({ onVideoSelect, children }: VideoUploaderStateProps
   const [fileOptions, setFileOptions] = useState<Record<string, { transcription: boolean; captions: boolean }>>({});
   const [duplicateFile, setDuplicateFile] = useState<{ file: File; hash: string; existingPath: string } | null>(null);
   const { startTranscription } = useTranscription();
+  const { processingFiles, setProcessingFiles } = useFileValidation({
+    setTotalSize,
+    setDuplicateFile,
+    handleUpload: async () => {} // Placeholder, will be updated
+  });
 
   const { uploadStates, handleUpload } = useMultiFileUpload({
     bucket: 'videos',
     fileTypes: ['video'],
     onFileSelect: async (file, path) => {
-      const { processingFiles, setProcessingFiles } = useFileValidation({
-        setTotalSize,
-        setDuplicateFile,
-        handleUpload
-      });
-
       if (processingFiles.has(file.name)) {
         console.log('File already being processed:', file.name);
         return;
@@ -60,11 +59,21 @@ const VideoUploaderState = ({ onVideoSelect, children }: VideoUploaderStateProps
     }
   });
 
-  const { handleValidFiles } = useFileValidation({
-    setTotalSize,
-    setDuplicateFile,
-    handleUpload
-  });
+  const handleValidFiles = async (validFiles: File[]) => {
+    try {
+      for (const file of validFiles) {
+        if (processingFiles.has(file.name)) {
+          console.log('Skipping already processing file:', file.name);
+          continue;
+        }
+
+        setTotalSize(prev => prev + file.size);
+        await handleUpload([file]);
+      }
+    } catch (error) {
+      console.error('Error handling valid files:', error);
+    }
+  };
 
   const handleTranscriptionChange = (path: string, enabled: boolean) => {
     const fileName = Object.keys(uploadStates).find(key => uploadStates[key].path === path);

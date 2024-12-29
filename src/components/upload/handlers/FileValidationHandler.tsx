@@ -37,32 +37,9 @@ export const useFileValidation = ({
     }
   };
 
-  const handleValidFiles = async (validFiles: File[]) => {
-    setProcessingFiles(new Set());
-
-    for (const file of validFiles) {
-      if (processingFiles.has(file.name)) {
-        console.log('Skipping already processing file:', file.name);
-        continue;
-      }
-
-      const { isDuplicate, existingPath } = await checkForDuplicates(file);
-      
-      if (isDuplicate && existingPath) {
-        const fileHash = await calculateFileHash(file);
-        setDuplicateFile({ file, hash: fileHash, existingPath });
-        return;
-      }
-
-      setTotalSize(prev => prev + file.size);
-      const fileHash = await calculateFileHash(file);
-      await handleUpload([file], { metadata: { fileHash } });
-    }
-  };
-
   return {
     processingFiles,
     setProcessingFiles,
-    handleValidFiles
+    checkForDuplicates
   };
 };
