@@ -8,7 +8,8 @@ import { useVideoProcessing } from '@/hooks/useVideoProcessing';
 const Index = () => {
   const navigate = useNavigate();
   const {
-    videoFiles,
+    videoFile,
+    videoPath,
     logoFile,
     logoPath,
     position,
@@ -25,6 +26,9 @@ const Index = () => {
     handleVideoSelect,
     handleLogoSelect
   } = useVideoProcessing();
+
+  // Transform single video file into array format expected by ProcessingForm
+  const videoFiles = videoFile ? [{ file: videoFile, path: videoPath }] : [];
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
