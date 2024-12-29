@@ -23,14 +23,11 @@ const VideoPlayerModal = ({ isOpen, onClose, videoUrl, title }: VideoPlayerModal
         <div className="relative w-full max-w-full overflow-hidden rounded-lg">
           <video 
             controls 
+            controlsList="nodownload" 
             className="max-h-[80vh] w-auto mx-auto"
-            src={videoUrl}
-            onError={(e) => console.error('Video loading error:', e)}
-            onLoadedMetadata={(e) => {
-              const video = e.target as HTMLVideoElement;
-              console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
-            }}
+            key={videoUrl} // Add key to force video reload when URL changes
           >
+            <source src={videoUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>

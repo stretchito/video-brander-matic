@@ -120,7 +120,7 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
             isOpen={!!openModals[url]}
             onClose={() => handleCloseModal(url)}
             videoUrl={url}
-            title={`Processed Video ${hasMultipleVideos ? index + 1 : ''}`}
+            title={`Processed Video ${index + 1}`}
           />
         ))}
       </div>
