@@ -32,6 +32,7 @@ export const useVideoProcessing = () => {
       setProcessedCount(0);
       setProcessedUrls([]);
 
+      // Process videos sequentially
       for (const [index, { file }] of videoState.videoFiles.entries()) {
         processingStatus.updateStatus(
           'processing',
@@ -44,12 +45,6 @@ export const useVideoProcessing = () => {
           throw new Error('User not authenticated');
         }
 
-        processingStatus.updateStatus(
-          'processing', 
-          `Processing video ${index + 1}...`, 
-          70
-        );
-        
         const { finalVideoUrl, videoPublicId, logoPublicId } = await processVideo(
           file,
           videoState.logoFile,
@@ -58,14 +53,15 @@ export const useVideoProcessing = () => {
           videoState.format
         );
 
-        // Add the new URL to our processed URLs array
-        setProcessedUrls(prev => [...prev, finalVideoUrl]);
+        // Add the new URL to processed URLs array
+        const newUrls = [...processedUrls, finalVideoUrl];
+        setProcessedUrls(newUrls);
         setProcessedCount(prev => prev + 1);
 
-        // Update the current action to show all processed URLs
+        // Update status for each processed video
         processingStatus.updateStatus(
           index === videoState.videoFiles.length - 1 ? 'completed' : 'processing',
-          processedUrls.join(','),
+          finalVideoUrl,
           Math.round((index + 1) / videoState.videoFiles.length * 100)
         );
 
@@ -86,12 +82,6 @@ export const useVideoProcessing = () => {
           throw jobError;
         }
       }
-
-      processingStatus.updateStatus(
-        'completed',
-        processedUrls.join(','),
-        100
-      );
 
       toast.success('Video processing completed!');
 

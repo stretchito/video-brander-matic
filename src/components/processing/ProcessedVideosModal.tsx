@@ -22,11 +22,9 @@ const ProcessedVideosModal = ({
   videoUrls,
   processedCount
 }: ProcessedVideosModalProps) => {
-  if (videoUrls.length === 0) return null;
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[500px] w-[95vw] overflow-y-auto max-h-[80vh]">
+      <DialogContent className="max-w-[500px] w-[95vw] overflow-y-auto max-h-[80vh] fixed bottom-4 left-1/2 transform -translate-x-1/2">
         <DialogHeader>
           <DialogTitle>Processed Videos</DialogTitle>
           <DialogDescription>

@@ -47,13 +47,16 @@ const ProcessingStatus = ({
   };
 
   useEffect(() => {
-    if (status === 'completed' && currentAction.includes('http')) {
+    if (currentAction.includes('http')) {
       const urls = currentAction.split(',')
         .map(url => url.trim())
         .filter(url => url.startsWith('https://res.cloudinary.com') && url.endsWith('.mp4'));
       setVideoUrls(urls);
+      if (urls.length > 0) {
+        setIsModalOpen(true);
+      }
     }
-  }, [status, currentAction]);
+  }, [currentAction]);
 
   const hasProcessedVideos = videoUrls.length > 0;
   const allVideosProcessed = processedCount === totalVideos && totalVideos > 0;
