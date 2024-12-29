@@ -20,11 +20,16 @@ const VideoPlayerModal = ({ isOpen, onClose, videoUrl, title }: VideoPlayerModal
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="max-w-full overflow-hidden rounded-lg">
+        <div className="relative w-full max-w-full overflow-hidden rounded-lg">
           <video 
             controls 
-            className="max-h-[80vh] w-auto"
+            className="max-h-[80vh] w-auto mx-auto"
             src={videoUrl}
+            onError={(e) => console.error('Video loading error:', e)}
+            onLoadedMetadata={(e) => {
+              const video = e.target as HTMLVideoElement;
+              console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+            }}
           >
             Your browser does not support the video tag.
           </video>
