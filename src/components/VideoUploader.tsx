@@ -2,20 +2,22 @@ import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import FileList from './FileList';
 import { useMultiFileUpload } from '@/hooks/useMultiFileUpload';
-import { toast } from 'sonner';
+import { useTranscription } from '@/hooks/useTranscription';
+import FileSizeValidator from './upload/FileSizeValidator';
+import FileOptionsManager from './upload/FileOptionsManager';
 import UploadDropzone from './upload/UploadDropzone';
-import { supabase } from '@/integrations/supabase/client';
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+const MAX_TOTAL_SIZE = 500 * 1024 * 1024; // 500MB
 
 interface VideoUploaderProps {
   onVideoSelect: (file: File, path: string, options?: { transcription?: boolean; captions?: boolean }) => void;
 }
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
-const MAX_TOTAL_SIZE = 500 * 1024 * 1024; // 500MB
-
 const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
   const [totalSize, setTotalSize] = useState(0);
   const [fileOptions, setFileOptions] = useState<Record<string, { transcription: boolean; captions: boolean }>>({});
+  const { startTranscription } = useTranscription();
 
   const { uploadStates, handleUpload } = useMultiFileUpload({
     bucket: 'videos',
@@ -25,57 +27,20 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
       onVideoSelect(file, path, options);
 
       if (options?.transcription) {
-        try {
-          console.log('Starting transcription process for:', file.name);
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) throw new Error('User not authenticated');
-
-          const { data } = supabase.storage
-            .from('videos')
-            .getPublicUrl(path);
-
-          console.log('Invoking transcribe-video function with URL:', data.publicUrl);
-          const { data: transcriptionData, error } = await supabase.functions.invoke('transcribe-video', {
-            body: {
-              videoUrl: data.publicUrl,
-              jobId: path,
-              userId: user.id,
-            },
-          });
-
-          if (error) throw error;
-          console.log('Transcription response:', transcriptionData);
-          toast.success('Transcription process started');
-        } catch (error) {
-          console.error('Transcription error:', error);
-          toast.error('Failed to start transcription process');
-        }
+        await startTranscription(file, path);
       }
     }
   });
 
-  const onDrop = async (acceptedFiles: File[]) => {
-    const newTotalSize = acceptedFiles.reduce((acc, file) => acc + file.size, 0) + totalSize;
-    
-    // Check individual file sizes
-    const oversizedFiles = acceptedFiles.filter(file => file.size > MAX_FILE_SIZE);
-    if (oversizedFiles.length > 0) {
-      toast.error(`Some files exceed the 25MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
-      return;
-    }
-
-    // Check total size
-    if (newTotalSize > MAX_TOTAL_SIZE) {
-      toast.error('Total upload size exceeds 500MB limit');
-      return;
-    }
-
-    setTotalSize(newTotalSize);
-    await handleUpload(acceptedFiles);
+  const handleValidFiles = async (validFiles: File[]) => {
+    setTotalSize(prev => prev + validFiles.reduce((acc, file) => acc + file.size, 0));
+    await handleUpload(validFiles);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
+    onDrop: (acceptedFiles) => {
+      // FileSizeValidator component will handle the validation and call handleValidFiles
+    },
     accept: {
       'video/*': ['.mp4', '.mov', '.avi', '.webm']
     },
@@ -93,14 +58,6 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
           transcription: enabled
         }
       }));
-      // Update the file options in parent component
-      const file = uploadStates[fileName];
-      if (file) {
-        onVideoSelect(file as unknown as File, path, { 
-          transcription: enabled, 
-          captions: fileOptions[fileName]?.captions || false 
-        });
-      }
     }
   };
 
@@ -114,14 +71,6 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
           captions: enabled
         }
       }));
-      // Update the file options in parent component
-      const file = uploadStates[fileName];
-      if (file) {
-        onVideoSelect(file as unknown as File, path, { 
-          transcription: enabled ? true : (fileOptions[fileName]?.transcription || false), 
-          captions: enabled 
-        });
-      }
     }
   };
 
@@ -135,6 +84,14 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
 
   return (
     <div className="space-y-4">
+      <FileSizeValidator
+        files={[]}
+        currentTotalSize={totalSize}
+        maxFileSize={MAX_FILE_SIZE}
+        maxTotalSize={MAX_TOTAL_SIZE}
+        onValidationPass={handleValidFiles}
+      />
+
       <UploadDropzone {...getRootProps()} isDragActive={isDragActive}>
         <input {...getInputProps()} />
       </UploadDropzone>
@@ -146,6 +103,23 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
           onCaptionsChange={handleCaptionsChange}
         />
       )}
+
+      {Object.entries(uploadStates).map(([fileName, state]) => (
+        <FileOptionsManager
+          key={fileName}
+          fileName={fileName}
+          path={state.path}
+          onOptionsChange={(name, options) => {
+            setFileOptions(prev => ({
+              ...prev,
+              [name]: options
+            }));
+          }}
+          onFileSelect={onVideoSelect}
+          file={state as unknown as File}
+          currentOptions={fileOptions}
+        />
+      ))}
     </div>
   );
 };
