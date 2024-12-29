@@ -32,9 +32,9 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
 
   const getProgressColor = () => {
     if (status === 'waiting') return 'bg-transparent';
-    if (progress === 100 && status !== 'error') return 'bg-green-500';
+    if (progress === 100 && status === 'completed') return 'bg-green-500';
     if (status === 'error') return 'bg-red-500';
-    return 'bg-primary';
+    return 'bg-[#33C3F0]';
   };
 
   // Parse video URLs from currentAction if it's a completed status

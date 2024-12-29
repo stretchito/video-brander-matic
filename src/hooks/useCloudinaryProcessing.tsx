@@ -46,13 +46,28 @@ export const useCloudinaryProcessing = () => {
       
       console.log('Final Processing...');
       
-      // Add a delay to allow Cloudinary to process the video
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Add a delay and verify the video URL is accessible
+      let retryCount = 0;
+      const maxRetries = 10;
+      let videoReady = false;
 
-      // Verify the video URL is accessible
-      const response = await fetch(finalVideoUrl, { method: 'HEAD' });
-      if (!response.ok) {
-        throw new Error('Processed video not yet available');
+      while (!videoReady && retryCount < maxRetries) {
+        try {
+          const response = await fetch(finalVideoUrl, { method: 'HEAD' });
+          if (response.ok) {
+            videoReady = true;
+          } else {
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        } catch (error) {
+          retryCount++;
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
+      if (!videoReady) {
+        throw new Error('Processed video not available after multiple attempts');
       }
 
       console.log('Video processing completed successfully');
