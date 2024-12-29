@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { cloudinary } from '@/integrations/cloudinary/config';
 import { toast } from 'sonner';
+import { Transformation } from '@cloudinary/url-gen';
 
 export const useVideoProcessing = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -63,25 +64,26 @@ export const useVideoProcessing = () => {
         throw new Error('User not authenticated');
       }
 
-      // Create transformation URL
-      const transformations = [];
+      // Create transformation configuration
+      const transformation = new Transformation();
+      
       if (greyscale) {
-        transformations.push({ effect: 'grayscale' });
+        transformation.effect('grayscale');
       }
 
       // Add logo overlay with position
       const overlayPosition = getOverlayPosition(position);
-      const transformation = {
-        overlay: logoUpload.public_id,
-        ...overlayPosition
-      };
-      transformations.push(transformation);
+      transformation
+        .overlay(`l_${logoUpload.public_id}`)
+        .gravity(overlayPosition.gravity)
+        .x(overlayPosition.x || 0)
+        .y(overlayPosition.y || 0);
 
       // Create the final video URL with transformations
       const finalVideoUrl = cloudinary
         .video(videoUpload.public_id)
         .format(format)
-        .addTransformation(transformations)
+        .addTransformation(transformation)
         .toURL();
 
       // Store job in Supabase
@@ -120,7 +122,7 @@ export const useVideoProcessing = () => {
     }
   };
 
-  const getOverlayPosition = (position: string) => {
+  const getOverlayPosition = (position: string): { gravity: string; x?: number; y?: number } => {
     switch (position) {
       case 'top-left':
         return { gravity: 'north_west', x: 10, y: 10 };
