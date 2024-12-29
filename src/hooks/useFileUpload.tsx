@@ -23,22 +23,26 @@ export const useFileUpload = ({ bucket, fileTypes, onSuccess }: UseFileUploadOpt
         const userId = (await supabase.auth.getUser()).data.user?.id;
         const filePath = `${userId}/${crypto.randomUUID()}.${fileExt}`;
 
+        // Set initial progress
+        setUploadProgress(10);
+
         // Create upload task
-        const uploadTask = supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from(bucket)
           .upload(filePath, file);
-
-        // Start upload and set initial progress
-        setUploadProgress(10);
-        const { error: uploadError } = await uploadTask;
 
         if (uploadError) {
           throw uploadError;
         }
 
+        // Set progress to 50% after upload starts
+        setUploadProgress(50);
+
         setCurrentFile(file.name);
         onSuccess(file, filePath);
         toast.success('File uploaded successfully');
+        
+        // Set final progress
         setUploadProgress(100);
       } catch (error) {
         console.error('Upload error:', error);
