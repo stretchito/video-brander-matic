@@ -26,6 +26,7 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
   };
 
   const getProgressColor = () => {
+    if (status === 'waiting') return 'bg-transparent';
     if (progress === 100 && status !== 'error') return 'bg-green-500';
     if (status === 'error') return 'bg-red-500';
     return 'bg-primary';
@@ -34,8 +35,11 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
   return (
     <div className="flex flex-col gap-4">
       <Progress 
-        value={progress} 
-        className="w-full"
+        value={status === 'waiting' ? 0 : progress} 
+        className={cn(
+          "w-full",
+          status === 'waiting' ? 'opacity-50' : 'opacity-100'
+        )}
         indicatorClassName={cn(getProgressColor())}
       />
       
@@ -55,6 +59,16 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
           </CardHeader>
           <CardContent>
             <p className="font-medium">{currentAction}</p>
+            {status === 'completed' && (
+              <a 
+                href={currentAction.includes('http') ? currentAction : '#'} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-800 underline mt-2 block"
+              >
+                View Processed File
+              </a>
+            )}
           </CardContent>
         </Card>
       </div>

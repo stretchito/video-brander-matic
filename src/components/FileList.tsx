@@ -48,8 +48,14 @@ const FileList = ({ files }: FileListProps) => {
                   value={file.progress} 
                   className={cn(
                     "h-1",
+                    file.progress === 0 && "opacity-50",
                     file.progress === 100 && "bg-green-100",
                     file.progress === 0 && "bg-red-100"
+                  )}
+                  indicatorClassName={cn(
+                    file.progress === 0 && "bg-transparent",
+                    file.progress === 100 && "bg-green-500",
+                    file.progress > 0 && file.progress < 100 && "bg-primary"
                   )}
                 />
               </div>
