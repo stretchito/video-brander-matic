@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import VideoPlayerModal from './VideoPlayerModal';
+import { PlayCircle } from 'lucide-react';
 
 interface ProcessingStatusProps {
   status: 'waiting' | 'processing' | 'completed' | 'error';
@@ -10,6 +13,8 @@ interface ProcessingStatusProps {
 }
 
 const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusProps) => {
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
   const getStatusColor = () => {
     switch (status) {
       case 'waiting':
@@ -59,19 +64,29 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
           </CardHeader>
           <CardContent>
             <p className="font-medium">{currentAction}</p>
-            {status === 'completed' && (
-              <a 
-                href={currentAction.includes('http') ? currentAction : '#'} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-800 underline mt-2 block"
-              >
-                View Processed File
-              </a>
+            {status === 'completed' && currentAction.includes('http') && (
+              <div className="mt-2">
+                <Button
+                  onClick={() => setIsVideoModalOpen(true)}
+                  variant="outline"
+                  className="w-full flex items-center gap-2"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  Play Video
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {status === 'completed' && currentAction.includes('http') && (
+        <VideoPlayerModal
+          isOpen={isVideoModalOpen}
+          onClose={() => setIsVideoModalOpen(false)}
+          videoUrl={currentAction}
+        />
+      )}
     </div>
   );
 };
