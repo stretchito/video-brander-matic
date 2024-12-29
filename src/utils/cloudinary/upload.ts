@@ -12,12 +12,13 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
       throw new Error('Could not fetch Cloudinary configuration');
     }
 
-    if (!config.cloudName || !config.apiKey) {
-      throw new Error('Cloudinary credentials are not properly configured');
-    }
-
     const timestamp = Math.round(new Date().getTime() / 1000);
-    const signature = await generateSignature(timestamp);
+    const params = {
+      timestamp,
+      upload_preset: 'ml_default'
+    };
+
+    const signature = await generateSignature(params);
 
     const formData = new FormData();
     formData.append('file', file);
