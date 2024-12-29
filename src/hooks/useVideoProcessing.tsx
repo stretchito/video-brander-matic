@@ -17,22 +17,21 @@ export const useVideoProcessing = () => {
       }
 
       processingStatus.setIsProcessing(true);
-      processingStatus.setStatus('processing');
-      processingStatus.setCurrentAction('Uploading files to Cloudinary...');
-      processingStatus.setProgress(10);
+      processingStatus.updateStatus('processing', 'Preparing files...', 10);
 
-      // Process each video
       for (const [index, { file }] of videoState.videoFiles.entries()) {
-        processingStatus.setCurrentAction(`Processing video ${index + 1} of ${videoState.videoFiles.length}`);
-        processingStatus.setProgress(50 + (index * 30 / videoState.videoFiles.length));
+        processingStatus.updateStatus(
+          'processing',
+          `Processing video ${index + 1} of ${videoState.videoFiles.length}`,
+          30
+        );
 
-        // Get current user
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           throw new Error('User not authenticated');
         }
 
-        processingStatus.setCurrentAction('Final Processing...');
+        processingStatus.updateStatus('processing', 'Final Processing...', 70);
         
         const { finalVideoUrl, videoPublicId, logoPublicId } = await processVideo(
           file,
@@ -42,7 +41,6 @@ export const useVideoProcessing = () => {
           videoState.format
         );
 
-        // Store job in Supabase
         const { error: jobError } = await supabase
           .from('processing_jobs')
           .insert({
@@ -61,19 +59,22 @@ export const useVideoProcessing = () => {
         }
 
         processingStatus.setProcessedVideoUrl(finalVideoUrl);
-        processingStatus.setProgress(70 + (index * 30 / videoState.videoFiles.length));
+        processingStatus.updateStatus(
+          'completed',
+          finalVideoUrl,
+          100
+        );
       }
 
-      processingStatus.setProgress(100);
-      processingStatus.setStatus('completed');
-      processingStatus.setCurrentAction(processingStatus.processedVideoUrl);
       toast.success('Video processing completed!');
 
     } catch (error) {
       console.error('Processing error:', error);
-      processingStatus.setStatus('error');
-      processingStatus.setCurrentAction('Error processing video');
-      processingStatus.setProgress(0);
+      processingStatus.updateStatus(
+        'error',
+        'Error processing video',
+        0
+      );
       toast.error('Error processing video');
     } finally {
       processingStatus.setIsProcessing(false);

@@ -8,6 +8,16 @@ export const useProcessingStatus = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>('');
 
+  const updateStatus = (
+    newStatus: ProcessingStatus,
+    newAction: string,
+    newProgress: number
+  ) => {
+    setStatus(newStatus);
+    setCurrentAction(newAction);
+    setProgress(newProgress);
+  };
+
   return {
     status,
     setStatus,
@@ -18,6 +28,7 @@ export const useProcessingStatus = () => {
     isProcessing,
     setIsProcessing,
     processedVideoUrl,
-    setProcessedVideoUrl
+    setProcessedVideoUrl,
+    updateStatus
   };
 };
