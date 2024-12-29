@@ -27,16 +27,35 @@ const VideoUploaderState = ({ onVideoSelect, children }: VideoUploaderStateProps
   const [fileOptions, setFileOptions] = useState<Record<string, { transcription: boolean; captions: boolean }>>({});
   const { startTranscription } = useTranscription();
   const [duplicateFile, setDuplicateFile] = useState<{ file: File; hash: string; existingPath: string } | null>(null);
+  const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
 
   const { uploadStates, handleUpload } = useMultiFileUpload({
     bucket: 'videos',
     fileTypes: ['video'],
     onFileSelect: async (file, path) => {
-      const options = fileOptions[file.name];
-      onVideoSelect(file, path, options);
+      // Check if file is already being processed
+      if (processingFiles.has(file.name)) {
+        console.log('File already being processed:', file.name);
+        return;
+      }
 
-      if (options?.transcription) {
-        await startTranscription(file, path);
+      // Mark file as being processed
+      setProcessingFiles(prev => new Set(prev).add(file.name));
+
+      try {
+        const options = fileOptions[file.name];
+        await onVideoSelect(file, path, options);
+
+        if (options?.transcription) {
+          await startTranscription(file, path);
+        }
+      } finally {
+        // Remove file from processing set when done
+        setProcessingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(file.name);
+          return newSet;
+        });
       }
     }
   });
@@ -64,7 +83,16 @@ const VideoUploaderState = ({ onVideoSelect, children }: VideoUploaderStateProps
   };
 
   const handleValidFiles = async (validFiles: File[]) => {
+    // Clear any existing processing states
+    setProcessingFiles(new Set());
+
     for (const file of validFiles) {
+      // Skip if file is already being processed
+      if (processingFiles.has(file.name)) {
+        console.log('Skipping already processing file:', file.name);
+        continue;
+      }
+
       const { isDuplicate, existingPath } = await checkForDuplicates(file);
       
       if (isDuplicate && existingPath) {

@@ -37,14 +37,14 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
               return;
             }
             
-            // Log dropped files for debugging
-            console.log('Dropped files:', files.map(f => ({ 
-              name: f.name, 
-              size: f.size / (1024 * 1024) + 'MB' 
-            })));
-
-            // Clear previous files and set new ones
-            setDroppedFiles(files);
+            // Clear previous files before setting new ones to prevent duplicates
+            setDroppedFiles([]);
+            setFileOptions({});
+            
+            // Set new files after a short delay to ensure cleanup is complete
+            setTimeout(() => {
+              setDroppedFiles(files);
+            }, 0);
           },
           accept: {
             'video/*': ['.mp4', '.mov', '.avi', '.webm']
@@ -53,14 +53,6 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
           maxSize: MAX_FILE_SIZE,
           disabled: isProcessing
         });
-
-        const uploadedFiles = Object.entries(uploadStates).map(([name, state]) => ({
-          name,
-          path: state.path,
-          progress: state.progress,
-          transcriptionEnabled: fileOptions[name]?.transcription || false,
-          captionsEnabled: fileOptions[name]?.captions || false
-        }));
 
         return (
           <div className="space-y-4">
@@ -78,9 +70,15 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
               <input {...getInputProps()} />
             </UploadDropzone>
 
-            {uploadedFiles.length > 0 && (
+            {Object.entries(uploadStates).length > 0 && (
               <FileList 
-                files={uploadedFiles}
+                files={Object.entries(uploadStates).map(([name, state]) => ({
+                  name,
+                  path: state.path,
+                  progress: state.progress,
+                  transcriptionEnabled: fileOptions[name]?.transcription || false,
+                  captionsEnabled: fileOptions[name]?.captions || false
+                }))}
                 onTranscriptionChange={handleTranscriptionChange}
                 onCaptionsChange={handleCaptionsChange}
               />
