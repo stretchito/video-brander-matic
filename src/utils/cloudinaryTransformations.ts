@@ -19,7 +19,7 @@ const calculatePosition = (
     'top-left': { x: 100, y: 300 },
     'top-right': { x: 880, y: 300 },
     'center': { x: 440, y: 860 },
-    'bottom': { x: 440, y: 1200 }
+    'bottom': { x: 440, y: 1400 }  // Updated y coordinate
   };
 
   const baseWidth = 1080;
@@ -32,7 +32,6 @@ const calculatePosition = (
   const scaledX = Math.round(basePos.x * scaleX);
   const scaledY = Math.round(basePos.y * scaleY);
 
-  // Use absolute positioning for all positions
   return {
     x: scaledX,
     y: scaledY,
