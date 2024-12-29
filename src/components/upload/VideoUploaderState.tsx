@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { useTranscription } from '@/hooks/useTranscription';
-import { useMultiFileUpload } from '@/hooks/useMultiFileUpload';
-import DuplicateFileHandler from './handlers/DuplicateFileHandler';
 import { useFileValidation } from './handlers/FileValidationHandler';
+import { useMultiFileUpload } from '@/hooks/useMultiFileUpload';
+import { useFileOptions } from '@/hooks/useFileOptions';
+import DuplicateFileHandler from './handlers/DuplicateFileHandler';
+import FileProcessor from './FileProcessor';
 
 interface VideoUploaderStateProps {
   onVideoSelect: (file: File, path: string, options?: { transcription?: boolean; captions?: boolean }) => void;
@@ -22,40 +23,29 @@ interface VideoUploaderStateProps {
 const VideoUploaderState = ({ onVideoSelect, children }: VideoUploaderStateProps) => {
   const [totalSize, setTotalSize] = useState(0);
   const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
-  const [fileOptions, setFileOptions] = useState<Record<string, { transcription: boolean; captions: boolean }>>({});
   const [duplicateFile, setDuplicateFile] = useState<{ file: File; hash: string; existingPath: string } | null>(null);
-  const { startTranscription } = useTranscription();
-  const { processingFiles, setProcessingFiles } = useFileValidation({
+  const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
+  
+  const { fileOptions, setFileOptions, handleTranscriptionChange, handleCaptionsChange } = useFileOptions();
+  
+  const { processingFiles: validationFiles, setProcessingFiles: setValidationFiles } = useFileValidation({
     setTotalSize,
     setDuplicateFile,
-    handleUpload: async () => {} // Placeholder, will be updated
+    handleUpload: async () => {}
   });
 
   const { uploadStates, handleUpload } = useMultiFileUpload({
     bucket: 'videos',
     fileTypes: ['video'],
-    onFileSelect: async (file, path) => {
-      if (processingFiles.has(file.name)) {
-        console.log('File already being processed:', file.name);
-        return;
-      }
-
-      setProcessingFiles(prev => new Set(prev).add(file.name));
-
-      try {
-        const options = fileOptions[file.name];
-        await onVideoSelect(file, path, options);
-
-        if (options?.transcription) {
-          await startTranscription(file, path);
-        }
-      } finally {
-        setProcessingFiles(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(file.name);
-          return newSet;
-        });
-      }
+    onFileSelect: (file, path) => {
+      const options = fileOptions[file.name];
+      return <FileProcessor
+        file={file}
+        path={path}
+        options={options}
+        onVideoSelect={onVideoSelect}
+        setProcessingFiles={setProcessingFiles}
+      />;
     }
   });
 
@@ -75,32 +65,6 @@ const VideoUploaderState = ({ onVideoSelect, children }: VideoUploaderStateProps
     }
   };
 
-  const handleTranscriptionChange = (path: string, enabled: boolean) => {
-    const fileName = Object.keys(uploadStates).find(key => uploadStates[key].path === path);
-    if (fileName) {
-      setFileOptions(prev => ({
-        ...prev,
-        [fileName]: {
-          ...prev[fileName],
-          transcription: enabled
-        }
-      }));
-    }
-  };
-
-  const handleCaptionsChange = (path: string, enabled: boolean) => {
-    const fileName = Object.keys(uploadStates).find(key => uploadStates[key].path === path);
-    if (fileName) {
-      setFileOptions(prev => ({
-        ...prev,
-        [fileName]: {
-          transcription: enabled ? true : (prev[fileName]?.transcription || false),
-          captions: enabled
-        }
-      }));
-    }
-  };
-
   return (
     <>
       {children({
@@ -109,8 +73,8 @@ const VideoUploaderState = ({ onVideoSelect, children }: VideoUploaderStateProps
         fileOptions,
         uploadStates,
         handleValidFiles,
-        handleTranscriptionChange,
-        handleCaptionsChange,
+        handleTranscriptionChange: (path, enabled) => handleTranscriptionChange(path, enabled, uploadStates),
+        handleCaptionsChange: (path, enabled) => handleCaptionsChange(path, enabled, uploadStates),
         setDroppedFiles,
         setFileOptions
       })}
