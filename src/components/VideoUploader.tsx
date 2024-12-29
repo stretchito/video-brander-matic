@@ -28,9 +28,14 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
         setFileOptions
       }) => {
         const { getRootProps, getInputProps, isDragActive } = useDropzone({
-          onDrop: (files) => {
+          onDrop: async (files) => {
+            // Clear previous files to prevent re-upload
+            setDroppedFiles([]);
             console.log('Dropped files:', files.map(f => ({ name: f.name, size: f.size / (1024 * 1024) + 'MB' })));
-            setDroppedFiles(files);
+            // Set new files after a short delay to prevent state update loop
+            setTimeout(() => {
+              setDroppedFiles(files);
+            }, 100);
           },
           accept: {
             'video/*': ['.mp4', '.mov', '.avi', '.webm']
@@ -49,13 +54,15 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
 
         return (
           <div className="space-y-4">
-            <FileSizeValidator
-              files={droppedFiles}
-              currentTotalSize={totalSize}
-              maxFileSize={MAX_FILE_SIZE}
-              maxTotalSize={MAX_TOTAL_SIZE}
-              onValidationPass={handleValidFiles}
-            />
+            {droppedFiles.length > 0 && (
+              <FileSizeValidator
+                files={droppedFiles}
+                currentTotalSize={totalSize}
+                maxFileSize={MAX_FILE_SIZE}
+                maxTotalSize={MAX_TOTAL_SIZE}
+                onValidationPass={handleValidFiles}
+              />
+            )}
 
             <UploadDropzone {...getRootProps()} isDragActive={isDragActive}>
               <input {...getInputProps()} />
