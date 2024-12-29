@@ -16,6 +16,7 @@ interface VideoUploaderProps {
 
 const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
   const [totalSize, setTotalSize] = useState(0);
+  const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
   const [fileOptions, setFileOptions] = useState<Record<string, { transcription: boolean; captions: boolean }>>({});
   const { startTranscription } = useTranscription();
 
@@ -39,7 +40,7 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
-      // FileSizeValidator component will handle the validation and call handleValidFiles
+      setDroppedFiles(acceptedFiles);
     },
     accept: {
       'video/*': ['.mp4', '.mov', '.avi', '.webm']
@@ -85,7 +86,7 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
   return (
     <div className="space-y-4">
       <FileSizeValidator
-        files={[]}
+        files={droppedFiles}
         currentTotalSize={totalSize}
         maxFileSize={MAX_FILE_SIZE}
         maxTotalSize={MAX_TOTAL_SIZE}
