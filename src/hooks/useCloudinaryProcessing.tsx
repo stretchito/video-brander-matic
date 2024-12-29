@@ -39,9 +39,9 @@ export const useCloudinaryProcessing = () => {
       const overlayTransform = `l_${logoUpload.public_id},h_75,w_200,c_fit,g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y}`;
       transformations.push(overlayTransform);
 
-      // Create final video URL
-      const transformationString = transformations.join(',');
-      const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/${videoUpload.public_id}.${format}`;
+      // Create final video URL with version to ensure fresh transformation
+      const transformationString = transformations.join('/');
+      const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/v${videoUpload.version}/${videoUpload.public_id}.${format}`;
       
       console.log('Verifying processed video URL:', finalVideoUrl);
       
