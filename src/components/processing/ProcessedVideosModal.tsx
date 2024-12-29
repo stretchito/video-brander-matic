@@ -44,10 +44,10 @@ const ProcessedVideosModal = ({
                 variant="outline"
                 size="sm"
                 onClick={() => window.open(url, '_blank')}
-                className="flex items-center gap-2 whitespace-nowrap"
+                className="flex items-center gap-2 min-w-[120px]"
               >
                 <PlayCircle className="w-4 h-4" />
-                Play Video {index + 1}
+                Play Video
               </Button>
             </div>
           ))}
