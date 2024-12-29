@@ -33,6 +33,10 @@ Deno.serve(async (req) => {
     
     const { jobId, videoPath, logoPath, position, greyscale, outputFormat } = payload;
 
+    if (!jobId || !videoPath || !logoPath || !position || !outputFormat) {
+      throw new Error('Missing required parameters');
+    }
+
     try {
       // Update job status to processing
       await updateJobStatus(jobId, 'processing');
@@ -41,6 +45,10 @@ Deno.serve(async (req) => {
       // Get signed URLs for video and logo
       const videoUrl = await getSignedUrl('videos', videoPath);
       const logoUrl = await getSignedUrl('logos', logoPath);
+
+      if (!videoUrl || !logoUrl) {
+        throw new Error('Failed to get signed URLs');
+      }
 
       // Upload video to Cloudinary
       console.log('Uploading video to Cloudinary...');
@@ -108,7 +116,7 @@ Deno.serve(async (req) => {
     console.error('Error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error.message || 'Unknown error occurred',
         details: 'An error occurred during video processing'
       }),
       { 

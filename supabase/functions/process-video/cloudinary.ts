@@ -8,23 +8,43 @@ cloudinary.config({
 });
 
 export const uploadToCloudinary = async (url: string, options: any) => {
-  console.log(`Uploading to Cloudinary with options:`, options);
-  return await cloudinary.uploader.upload(url, options);
+  try {
+    console.log(`Uploading to Cloudinary with options:`, options);
+    // Ensure URL is properly formatted
+    const formattedUrl = url.startsWith('http') ? url : `https://${url}`;
+    return await cloudinary.uploader.upload(formattedUrl, options);
+  } catch (error) {
+    console.error('Error uploading to Cloudinary:', error);
+    throw error;
+  }
 };
 
 export const processVideo = async (publicId: string, transformations: any[], outputFormat: string) => {
-  console.log(`Processing video with transformations:`, transformations);
-  return await cloudinary.video.upload(`cloudinary://${publicId}`, {
-    resource_type: 'video',
-    public_id: `processed_${publicId}`,
-    transformation: transformations,
-    format: outputFormat,
-  });
+  try {
+    console.log(`Processing video with transformations:`, transformations);
+    const result = await cloudinary.uploader.explicit(publicId, {
+      resource_type: 'video',
+      type: 'upload',
+      eager: [{
+        transformation: transformations,
+        format: outputFormat
+      }]
+    });
+    return result.eager[0];
+  } catch (error) {
+    console.error('Error processing video in Cloudinary:', error);
+    throw error;
+  }
 };
 
 export const deleteFromCloudinary = async (publicId: string) => {
-  console.log(`Deleting from Cloudinary:`, publicId);
-  return await cloudinary.uploader.destroy(publicId);
+  try {
+    console.log(`Deleting from Cloudinary:`, publicId);
+    return await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+  } catch (error) {
+    console.error('Error deleting from Cloudinary:', error);
+    throw error;
+  }
 };
 
 export const getOverlayPosition = (position: string) => {
