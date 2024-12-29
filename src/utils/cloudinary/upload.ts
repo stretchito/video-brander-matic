@@ -3,9 +3,12 @@ import { generateSignature } from './signature';
 
 export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
   try {
+    console.log(`Uploading ${resourceType}...`, file.name);
+    
     const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
     
     if (configError || !config) {
+      console.error('Error fetching Cloudinary config:', configError);
       throw new Error('Could not fetch Cloudinary configuration');
     }
 
@@ -21,7 +24,6 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     formData.append('timestamp', timestamp.toString());
     formData.append('api_key', config.apiKey);
     formData.append('signature', signature);
-    formData.append('resource_type', resourceType);
 
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`,
@@ -32,11 +34,14 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Upload failed: ${JSON.stringify(errorData)}`);
+      const errorData = await response.text();
+      console.error(`Error uploading ${resourceType} to Cloudinary:`, errorData);
+      throw new Error(`Upload failed: ${errorData}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log(`${resourceType} uploaded:`, result);
+    return result;
   } catch (error) {
     console.error(`Error uploading ${resourceType} to Cloudinary:`, error);
     throw error;
