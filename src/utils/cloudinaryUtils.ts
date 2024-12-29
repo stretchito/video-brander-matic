@@ -30,23 +30,27 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
       throw new Error('Cloudinary credentials are not properly configured');
     }
 
-    const timestamp = Math.round(new Date().getTime() / 1000);
-    const signature = await generateSignature(timestamp);
-
-    // Create FormData and append necessary fields
+    // Create FormData instance
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('timestamp', timestamp.toString());
-    formData.append('api_key', config.apiKey);
-    formData.append('signature', signature);
-
-    // Log the upload attempt
+    
+    // Log file details before upload
     console.log(`Attempting to upload ${resourceType}:`, {
       fileName: file.name,
       fileSize: file.size,
       fileType: file.type,
       cloudName: config.cloudName
     });
+
+    // Generate upload signature
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const signature = await generateSignature(timestamp);
+
+    // Append required fields to FormData
+    formData.append('file', file);
+    formData.append('timestamp', timestamp.toString());
+    formData.append('api_key', config.apiKey);
+    formData.append('signature', signature);
+    formData.append('resource_type', resourceType);
 
     // Make the upload request
     const response = await fetch(
@@ -68,7 +72,7 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
       throw new Error(`Upload failed: ${errorText}`);
     }
 
-    // Parse and log successful response
+    // Parse and return successful response
     const responseData = await response.json();
     console.log(`${resourceType} upload successful:`, responseData);
     
