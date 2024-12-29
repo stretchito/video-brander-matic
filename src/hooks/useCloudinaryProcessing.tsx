@@ -42,6 +42,9 @@ export const useCloudinaryProcessing = () => {
       
       console.log('Verifying processed video URL:', finalVideoUrl);
       
+      // Add a delay to allow Cloudinary to process the video
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       // Verify the video URL is accessible
       const response = await fetch(finalVideoUrl, { method: 'HEAD' });
       if (!response.ok) {
