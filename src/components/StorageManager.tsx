@@ -5,6 +5,17 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const StorageManager = () => {
   const [files, setFiles] = useState<Array<{ name: string; size: number; path: string }>>([]);
@@ -73,6 +84,31 @@ const StorageManager = () => {
     }
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete all files from both buckets
+      for (const file of files) {
+        const [bucket, ...pathParts] = file.path.split('/');
+        const filePath = pathParts.join('/');
+        
+        const { error } = await supabase.storage
+          .from(bucket)
+          .remove([filePath]);
+
+        if (error) throw error;
+      }
+
+      toast.success('All files deleted successfully');
+      loadFiles(); // Reload the file list
+    } catch (error) {
+      console.error('Error deleting all files:', error);
+      toast.error('Failed to delete all files');
+    }
+  };
+
   useEffect(() => {
     loadFiles();
   }, []);
@@ -88,7 +124,32 @@ const StorageManager = () => {
 
   return (
     <div className="p-4 border rounded-lg bg-background">
-      <h3 className="text-lg font-semibold mb-4">Storage Manager</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Storage Manager</h3>
+        {files.length > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                Delete All Files
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete all your stored files.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAll}>
+                  Delete All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
       <ScrollArea className="h-[300px] w-full rounded-md border p-4">
         {files.length === 0 ? (
           <p className="text-muted-foreground">No files stored</p>
