@@ -18,8 +18,6 @@ export const useMultiFileUpload = ({ bucket, fileTypes, onFileSelect }: UseMulti
   const [uploadStates, setUploadStates] = useState<Record<string, FileUploadState>>({});
 
   const handleUpload = useCallback(async (acceptedFiles: File[]) => {
-    const newUploadStates: Record<string, FileUploadState> = {};
-
     for (const file of acceptedFiles) {
       const fileType = file.type.split('/')[0];
       
@@ -34,22 +32,36 @@ export const useMultiFileUpload = ({ bucket, fileTypes, onFileSelect }: UseMulti
         const filePath = `${userId}/${crypto.randomUUID()}.${fileExt}`;
 
         // Initialize upload state
-        newUploadStates[file.name] = {
-          name: file.name,
-          path: filePath,
-          progress: 10
-        };
-        setUploadStates(prev => ({ ...prev, ...newUploadStates }));
+        setUploadStates(prev => ({
+          ...prev,
+          [file.name]: {
+            name: file.name,
+            path: filePath,
+            progress: 0
+          }
+        }));
 
+        // Create upload event with progress tracking
         const { error: uploadError } = await supabase.storage
           .from(bucket)
-          .upload(filePath, file);
+          .upload(filePath, file, {
+            onUploadProgress: (progress) => {
+              const percent = (progress.loaded / progress.total) * 100;
+              setUploadStates(prev => ({
+                ...prev,
+                [file.name]: {
+                  ...prev[file.name],
+                  progress: Math.round(percent)
+                }
+              }));
+            }
+          });
 
         if (uploadError) {
           throw uploadError;
         }
 
-        // Update progress and notify success
+        // Update progress to 100% and notify success
         setUploadStates(prev => ({
           ...prev,
           [file.name]: { ...prev[file.name], progress: 100 }

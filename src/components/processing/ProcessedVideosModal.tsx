@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import JSZip from 'jszip';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,31 @@ const ProcessedVideosModal = ({
   videoUrls,
   processedCount
 }: ProcessedVideosModalProps) => {
-  const [selectedVideos, setSelectedVideos] = React.useState<string[]>([]);
+  const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Generate thumbnails for each video
+    videoUrls.forEach(url => {
+      const video = document.createElement('video');
+      video.crossOrigin = "anonymous";
+      video.src = url;
+      
+      video.addEventListener('loadeddata', () => {
+        video.currentTime = 1; // Seek to 1 second
+      });
+
+      video.addEventListener('seeked', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const thumbnail = canvas.toDataURL('image/jpeg');
+        setThumbnails(prev => ({ ...prev, [url]: thumbnail }));
+      });
+    });
+  }, [videoUrls]);
 
   const handleCheckboxChange = (url: string) => {
     setSelectedVideos(prev => 
@@ -34,10 +59,38 @@ const ProcessedVideosModal = ({
     );
   };
 
-  const handleDownloadSelected = () => {
-    selectedVideos.forEach(url => {
-      window.open(url, '_blank');
+  const downloadSingleVideo = async (url: string) => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `processed_video_${Date.now()}.mp4`;
+    link.click();
+  };
+
+  const handleDownloadSelected = async () => {
+    if (selectedVideos.length === 1) {
+      await downloadSingleVideo(selectedVideos[0]);
+      return;
+    }
+
+    const zip = new JSZip();
+    
+    // Add each selected video to the zip
+    const downloads = selectedVideos.map(async (url, index) => {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      zip.file(`processed_video_${index + 1}.mp4`, blob);
     });
+
+    await Promise.all(downloads);
+
+    // Generate and download zip file
+    const content = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = `processed_videos_${Date.now()}.zip`;
+    link.click();
   };
 
   return (
@@ -75,8 +128,18 @@ const ProcessedVideosModal = ({
                     "hover:bg-secondary/20 transition-colors"
                   )}
                 >
-                  <Circle className="w-full h-full absolute" />
-                  <PlayCircle className="w-6 h-6 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                  {thumbnails[url] ? (
+                    <img 
+                      src={thumbnails[url]} 
+                      alt={`Thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <>
+                      <Circle className="w-full h-full absolute" />
+                      <PlayCircle className="w-6 h-6 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
