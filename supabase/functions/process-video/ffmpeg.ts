@@ -11,6 +11,7 @@ export async function processVideo(
   
   const ffmpeg = createFFmpeg({
     log: true,
+    logger: ({ message }) => console.log('FFmpeg:', message),
     corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
   });
 
@@ -59,7 +60,7 @@ export async function processVideo(
         outputName
       );
     } else {
-      // Default to MP4
+      // Default to MP4-compatible settings
       await ffmpeg.run(
         ...baseArgs,
         '-c:v', 'libx264',
