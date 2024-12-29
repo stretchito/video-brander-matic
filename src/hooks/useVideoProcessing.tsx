@@ -54,8 +54,7 @@ export const useVideoProcessing = () => {
         );
 
         // Add the new URL to processed URLs array
-        const newUrls = [...processedUrls, finalVideoUrl];
-        setProcessedUrls(newUrls);
+        setProcessedUrls(prev => [...prev, finalVideoUrl]);
         setProcessedCount(prev => prev + 1);
 
         // Update status for each processed video

@@ -22,8 +22,13 @@ const ProcessingStatus = ({
   const [videoUrls, setVideoUrls] = useState<string[]>([]);
   
   useEffect(() => {
-    if (currentAction.startsWith('https://res.cloudinary.com') && currentAction.endsWith('.mp4')) {
-      setVideoUrls(prev => [...prev, currentAction]);
+    // Only add URLs that are actually Cloudinary video URLs
+    if (currentAction.startsWith('https://res.cloudinary.com') && 
+        (currentAction.endsWith('.mp4') || 
+         currentAction.endsWith('.mov') || 
+         currentAction.endsWith('.avi') || 
+         currentAction.endsWith('.webm'))) {
+      setVideoUrls(prev => [...new Set([...prev, currentAction])]);
       setIsModalOpen(true);
     }
   }, [currentAction]);
@@ -39,6 +44,10 @@ const ProcessingStatus = ({
   const allVideosProcessed = processedCount === totalVideos && totalVideos > 0;
   const showSuccessMessage = status === 'completed' && allVideosProcessed;
 
+  // Ensure we're displaying the correct count
+  const displayCount = Math.min(processedCount, totalVideos);
+  const displayTotal = totalVideos > 0 ? totalVideos : videoUrls.length;
+
   return (
     <div className="flex flex-col gap-4">
       <ProcessingProgressBar status={status} progress={progress} />
@@ -49,8 +58,8 @@ const ProcessingStatus = ({
           status={status}
           currentAction={currentAction}
           hasProcessedVideos={hasProcessedVideos}
-          processedCount={processedCount}
-          totalVideos={totalVideos}
+          processedCount={displayCount}
+          totalVideos={displayTotal}
           onViewVideos={() => setIsModalOpen(true)}
           showSuccessMessage={false}
         />
@@ -60,8 +69,8 @@ const ProcessingStatus = ({
           status={status}
           currentAction={currentAction}
           hasProcessedVideos={hasProcessedVideos}
-          processedCount={processedCount}
-          totalVideos={totalVideos}
+          processedCount={displayCount}
+          totalVideos={displayTotal}
           onViewVideos={() => setIsModalOpen(true)}
           showSuccessMessage={showSuccessMessage}
         />
@@ -71,7 +80,7 @@ const ProcessingStatus = ({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         videoUrls={videoUrls}
-        processedCount={processedCount}
+        processedCount={displayCount}
         status={status}
         progress={progress}
       />
