@@ -37,7 +37,7 @@ const Index = () => {
           PM Batch Video Processor
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 gap-4 md:gap-6">
           <ProcessingForm
             videoFiles={videoFiles}
             logoFile={logoFile}
