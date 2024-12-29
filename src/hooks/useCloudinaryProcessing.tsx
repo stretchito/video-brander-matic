@@ -14,17 +14,20 @@ export const useCloudinaryProcessing = () => {
     try {
       // Get Cloudinary configuration
       const config = await getCloudinaryConfig();
+      console.log('Starting video processing for:', videoFile.name);
       
       // Upload logo first
       console.log('Uploading logo...', logoFile.name);
       const logoUpload = await uploadToCloudinary(logoFile, 'image');
       console.log('Logo uploaded:', logoUpload);
+      console.log('Logo public_id:', logoUpload.public_id);
       
       // Upload video
       console.log('Uploading video...', videoFile.name);
       const videoUpload = await uploadToCloudinary(videoFile, 'video');
       console.log('Video uploaded:', videoUpload);
       console.log('Video public_id:', videoUpload.public_id);
+      console.log('Video version:', videoUpload.version);
       
       // Get logo position
       const overlayPosition = getOverlayPosition(position);
@@ -51,8 +54,10 @@ export const useCloudinaryProcessing = () => {
       
       // Create final video URL with proper version handling
       const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/v${videoUpload.version}/${videoUpload.public_id}.${format}`;
-      console.log('Final video URL:', finalVideoUrl);
-      console.log('Expected network request name:', `${videoUpload.public_id}.${format}`);
+      console.log('=== FINAL VIDEO URL ===');
+      console.log(finalVideoUrl);
+      console.log('======================');
+      console.log('Look for this in Network tab:', `${videoUpload.public_id}.${format}`);
       
       // Verify video URL is accessible
       let retryCount = 0;
@@ -66,6 +71,7 @@ export const useCloudinaryProcessing = () => {
           if (response.ok) {
             videoReady = true;
             console.log('Video URL verified and accessible');
+            console.log('Final working URL:', finalVideoUrl);
           } else {
             console.log(`Attempt ${retryCount + 1}: Response status:`, response.status);
             console.log(`Attempt ${retryCount + 1}: Response headers:`, Object.fromEntries(response.headers));
@@ -86,6 +92,8 @@ export const useCloudinaryProcessing = () => {
       }
 
       console.log('Video processing completed successfully');
+      console.log('Use this URL to access the video:', finalVideoUrl);
+      
       return {
         finalVideoUrl,
         videoPublicId: videoUpload.public_id,
