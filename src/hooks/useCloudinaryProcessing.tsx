@@ -16,14 +16,15 @@ export const useCloudinaryProcessing = () => {
       const config = await getCloudinaryConfig();
       
       // Upload logo first
-      console.log('Uploading logo...');
+      console.log('Uploading logo...', logoFile.name);
       const logoUpload = await uploadToCloudinary(logoFile, 'image');
       console.log('Logo uploaded:', logoUpload);
       
       // Upload video
-      console.log('Uploading video...');
+      console.log('Uploading video...', videoFile.name);
       const videoUpload = await uploadToCloudinary(videoFile, 'video');
       console.log('Video uploaded:', videoUpload);
+      console.log('Video public_id:', videoUpload.public_id);
       
       // Get logo position
       const overlayPosition = getOverlayPosition(position);
@@ -51,6 +52,7 @@ export const useCloudinaryProcessing = () => {
       // Create final video URL with proper version handling
       const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/v${videoUpload.version}/${videoUpload.public_id}.${format}`;
       console.log('Final video URL:', finalVideoUrl);
+      console.log('Expected network request name:', `${videoUpload.public_id}.${format}`);
       
       // Verify video URL is accessible
       let retryCount = 0;
@@ -59,12 +61,14 @@ export const useCloudinaryProcessing = () => {
 
       while (!videoReady && retryCount < maxRetries) {
         try {
+          console.log(`Attempt ${retryCount + 1}: Checking URL:`, finalVideoUrl);
           const response = await fetch(finalVideoUrl, { method: 'HEAD' });
           if (response.ok) {
             videoReady = true;
             console.log('Video URL verified and accessible');
           } else {
             console.log(`Attempt ${retryCount + 1}: Response status:`, response.status);
+            console.log(`Attempt ${retryCount + 1}: Response headers:`, Object.fromEntries(response.headers));
             retryCount++;
             console.log(`Retry ${retryCount}/${maxRetries} - Video not ready yet`);
             await new Promise(resolve => setTimeout(resolve, 2000));
