@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import ProcessingForm from '@/components/processing/ProcessingForm';
 import { useVideoProcessing } from '@/hooks/useVideoProcessing';
+import { PositionType } from '@/types/videoProcessing';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -35,6 +36,11 @@ const Index = () => {
     navigate('/login');
   };
 
+  // Create a handler that ensures the position is of type PositionType
+  const handlePositionChange = (pos: string) => {
+    setPosition(pos as PositionType);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary to-secondary p-6">
       <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
@@ -64,7 +70,7 @@ const Index = () => {
           isProcessing={isProcessing}
           onVideoSelect={handleVideoSelect}
           onLogoSelect={handleLogoSelect}
-          onPositionChange={setPosition}
+          onPositionChange={handlePositionChange}
           onGreyscaleChange={setGreyscale}
           onFormatChange={setFormat}
           onProcess={handleProcess}
