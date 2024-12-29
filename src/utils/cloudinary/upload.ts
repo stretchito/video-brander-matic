@@ -24,6 +24,14 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     formData.append('timestamp', timestamp.toString());
     formData.append('api_key', config.apiKey);
     formData.append('signature', signature);
+    formData.append('upload_preset', 'ml_default');
+
+    console.log(`Uploading ${resourceType} to Cloudinary...`, {
+      cloudName: config.cloudName,
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    });
 
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`,
@@ -34,13 +42,21 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     );
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error(`Error uploading ${resourceType} to Cloudinary:`, errorData);
-      throw new Error(`Upload failed: ${errorData}`);
+      const errorText = await response.text();
+      console.error(`Error uploading ${resourceType} to Cloudinary:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      throw new Error(`Upload failed: ${errorText}`);
     }
 
     const result = await response.json();
-    console.log(`${resourceType} uploaded:`, result);
+    console.log(`${resourceType} uploaded successfully:`, {
+      publicId: result.public_id,
+      url: result.secure_url,
+      format: result.format
+    });
     return result;
   } catch (error) {
     console.error(`Error uploading ${resourceType} to Cloudinary:`, error);
