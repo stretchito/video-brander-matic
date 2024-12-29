@@ -13,8 +13,8 @@ interface ProcessingStatusProps {
 }
 
 const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusProps) => {
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-
+  const [openModals, setOpenModals] = useState<{ [key: string]: boolean }>({});
+  
   const getStatusColor = () => {
     switch (status) {
       case 'waiting':
@@ -35,6 +35,33 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
     if (progress === 100 && status !== 'error') return 'bg-green-500';
     if (status === 'error') return 'bg-red-500';
     return 'bg-primary';
+  };
+
+  // Parse video URLs from currentAction if it's a completed status
+  const getVideoUrls = () => {
+    if (status === 'completed' && currentAction.includes('http')) {
+      return currentAction.split(',').map(url => url.trim());
+    }
+    return [];
+  };
+
+  const videoUrls = getVideoUrls();
+  const hasMultipleVideos = videoUrls.length > 1;
+
+  const handleOpenModal = (url: string) => {
+    setOpenModals(prev => ({ ...prev, [url]: true }));
+  };
+
+  const handleCloseModal = (url: string) => {
+    setOpenModals(prev => ({ ...prev, [url]: false }));
+  };
+
+  const handleOpenAllModals = () => {
+    const newModals = videoUrls.reduce((acc, url) => {
+      acc[url] = true;
+      return acc;
+    }, {} as { [key: string]: boolean });
+    setOpenModals(newModals);
   };
 
   return (
@@ -70,15 +97,15 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
                 currentAction
               )}
             </p>
-            {status === 'completed' && currentAction.includes('http') && (
+            {status === 'completed' && videoUrls.length > 0 && (
               <div className="mt-2">
                 <Button
-                  onClick={() => setIsVideoModalOpen(true)}
+                  onClick={handleOpenAllModals}
                   variant="outline"
                   className="w-full flex items-center gap-2"
                 >
                   <PlayCircle className="w-4 h-4" />
-                  Play Video
+                  Play {hasMultipleVideos ? 'Videos' : 'Video'}
                 </Button>
               </div>
             )}
@@ -86,13 +113,17 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
         </Card>
       </div>
 
-      {status === 'completed' && currentAction.includes('http') && (
-        <VideoPlayerModal
-          isOpen={isVideoModalOpen}
-          onClose={() => setIsVideoModalOpen(false)}
-          videoUrl={currentAction}
-        />
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {videoUrls.map((url, index) => (
+          <VideoPlayerModal
+            key={url}
+            isOpen={!!openModals[url]}
+            onClose={() => handleCloseModal(url)}
+            videoUrl={url}
+            title={`Processed Video ${hasMultipleVideos ? index + 1 : ''}`}
+          />
+        ))}
+      </div>
     </div>
   );
 };

@@ -10,14 +10,15 @@ interface VideoPlayerModalProps {
   isOpen: boolean;
   onClose: () => void;
   videoUrl: string;
+  title: string;
 }
 
-const VideoPlayerModal = ({ isOpen, onClose, videoUrl }: VideoPlayerModalProps) => {
+const VideoPlayerModal = ({ isOpen, onClose, videoUrl, title }: VideoPlayerModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[90vw] w-fit">
         <DialogHeader>
-          <DialogTitle>Processed Video</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="max-w-full overflow-hidden rounded-lg">
           <video 
