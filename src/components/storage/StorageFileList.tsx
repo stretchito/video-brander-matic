@@ -14,13 +14,15 @@ interface StorageFileListProps {
 }
 
 const StorageFileList = ({ files, onDeleteFile }: StorageFileListProps) => {
+  const validFiles = Array.isArray(files) ? files : [];
+  
   return (
     <ScrollArea className="h-[300px] w-full rounded-md border p-4">
-      {files.length === 0 ? (
+      {validFiles.length === 0 ? (
         <p className="text-muted-foreground">No files stored</p>
       ) : (
         <div className="space-y-2">
-          {files.map((file) => (
+          {validFiles.map((file) => (
             <FileListItem
               key={file.path}
               name={file.name}

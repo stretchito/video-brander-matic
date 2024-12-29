@@ -10,10 +10,13 @@ const StorageManager = () => {
     return <div>Loading storage information...</div>;
   }
 
+  // Ensure we have a valid array of files and count them
+  const filesCount = Array.isArray(files) ? files.length : 0;
+
   return (
     <div className="p-4 border rounded-lg bg-background">
       <StorageHeader 
-        filesCount={files.length} 
+        filesCount={filesCount} 
         onDeleteAll={deleteAllFiles} 
       />
       <StorageFileList 
