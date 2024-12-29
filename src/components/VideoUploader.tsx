@@ -120,6 +120,7 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
           <p className="text-sm text-gray-500">or click to select files</p>
           <p className="mt-2 text-xs text-gray-400">Max file size: 25MB, Total limit: 500MB</p>
           <p className="text-xs text-gray-400">Supported formats: MP4, MOV, AVI, WEBM</p>
+          <p className="text-xs text-gray-400 mt-1">Select transcription options after upload</p>
         </div>
       </div>
 
