@@ -2,10 +2,6 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { cloudinary } from '@/integrations/cloudinary/config';
 import { toast } from 'sonner';
-import { Transformation } from '@cloudinary/url-gen';
-import { grayscale } from '@cloudinary/url-gen/actions/effect';
-import { source } from '@cloudinary/url-gen/actions/overlay';
-import { Position } from '@cloudinary/url-gen/qualifiers/position';
 import { PositionType, ProcessingStatus } from '@/types/videoProcessing';
 import { uploadToCloudinary, getOverlayPosition } from '@/utils/cloudinaryUtils';
 
@@ -49,29 +45,21 @@ export const useVideoProcessing = () => {
         throw new Error('User not authenticated');
       }
 
-      // Create transformation configuration
-      const transformation = new Transformation();
+      // Create the transformation string manually instead of using the SDK
+      const transformations = [];
       
       if (greyscale) {
-        transformation.effect(grayscale());
+        transformations.push('e_grayscale');
       }
 
       // Add logo overlay with position
       const overlayPosition = getOverlayPosition(position);
-      transformation.overlay(
-        source(logoUpload.public_id)
-          .position(new Position()
-            .gravity(overlayPosition.gravity)
-            .offsetX(overlayPosition.x)
-            .offsetY(overlayPosition.y))
-      );
+      const overlayTransform = `l_${logoUpload.public_id},g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y}`;
+      transformations.push(overlayTransform);
 
-      // Create the final video URL with transformations
-      const finalVideoUrl = cloudinary
-        .video(videoUpload.public_id)
-        .format(format)
-        .addTransformation(transformation)
-        .toURL();
+      // Create the final video URL
+      const transformationString = transformations.join(',');
+      const finalVideoUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload/${transformationString}/${videoUpload.public_id}.${format}`;
 
       // Store job in Supabase
       const { data: job, error: jobError } = await supabase
@@ -133,7 +121,7 @@ export const useVideoProcessing = () => {
     currentAction,
     progress,
     isProcessing,
-    setPosition: (pos: PositionType) => setPosition(pos),
+    setPosition,
     setGreyscale,
     setFormat,
     handleProcess,

@@ -17,7 +17,7 @@ const ProcessingOptions = ({
   onFormatChange
 }: ProcessingOptionsProps) => {
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="space-y-2">
         <Label>Logo Position</Label>
         <Select onValueChange={onPositionChange}>
@@ -36,8 +36,10 @@ const ProcessingOptions = ({
       <div className="flex items-center space-x-2">
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
-              <Switch onCheckedChange={onGreyscaleChange} />
+            <TooltipTrigger asChild>
+              <div>
+                <Switch onCheckedChange={onGreyscaleChange} />
+              </div>
             </TooltipTrigger>
             <TooltipContent>
               <p>Convert video to greyscale while keeping logo in color</p>
