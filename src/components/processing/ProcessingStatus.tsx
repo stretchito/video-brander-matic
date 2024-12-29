@@ -40,13 +40,12 @@ const ProcessingStatus = ({
     }
   }, [status]);
 
-  const hasProcessedVideos = videoUrls.length > 0;
-  const allVideosProcessed = processedCount === totalVideos && totalVideos > 0;
-  const showSuccessMessage = status === 'completed' && allVideosProcessed;
-
   // Ensure we're displaying the correct count
   const displayCount = Math.min(processedCount, totalVideos);
-  const displayTotal = totalVideos > 0 ? totalVideos : videoUrls.length;
+  const displayTotal = totalVideos || videoUrls.length;
+  const hasProcessedVideos = videoUrls.length > 0;
+  const allVideosProcessed = displayCount === displayTotal && displayTotal > 0;
+  const showSuccessMessage = status === 'completed' && allVideosProcessed;
 
   return (
     <div className="flex flex-col gap-4">

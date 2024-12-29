@@ -34,10 +34,13 @@ export const useVideoProcessing = () => {
 
       // Process videos sequentially
       for (const [index, { file }] of videoState.videoFiles.entries()) {
+        const currentVideoNumber = index + 1;
+        const totalVideos = videoState.videoFiles.length;
+        
         processingStatus.updateStatus(
           'processing',
-          `Processing video ${index + 1} of ${videoState.videoFiles.length}`,
-          30
+          `Processing video ${currentVideoNumber} of ${totalVideos}`,
+          Math.round((currentVideoNumber / totalVideos) * 100)
         );
 
         const { data: { user } } = await supabase.auth.getUser();
@@ -61,7 +64,7 @@ export const useVideoProcessing = () => {
         processingStatus.updateStatus(
           index === videoState.videoFiles.length - 1 ? 'completed' : 'processing',
           finalVideoUrl,
-          Math.round((index + 1) / videoState.videoFiles.length * 100)
+          Math.round((currentVideoNumber / totalVideos) * 100)
         );
 
         const { error: jobError } = await supabase
