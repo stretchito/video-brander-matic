@@ -8,8 +8,7 @@ import { useVideoProcessing } from '@/hooks/useVideoProcessing';
 const Index = () => {
   const navigate = useNavigate();
   const {
-    videoFile,
-    videoPath,
+    videoFiles,
     logoFile,
     logoPath,
     position,
@@ -49,8 +48,7 @@ const Index = () => {
         </div>
 
         <ProcessingForm
-          videoFile={videoFile}
-          videoPath={videoPath}
+          videoFiles={videoFiles}
           logoFile={logoFile}
           logoPath={logoPath}
           position={position}

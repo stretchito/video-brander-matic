@@ -1,14 +1,14 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ProcessingOptions from '../ProcessingOptions';
 import ProcessingStatus from './ProcessingStatus';
 import UploadSection from './UploadSection';
+import RequirementsCheck from './RequirementsCheck';
 
 interface ProcessingFormProps {
-  videoFile: File | null;
-  videoPath: string;
+  videoFiles: { file: File; path: string }[];
   logoFile: File | null;
   logoPath: string;
   position: string;
@@ -27,8 +27,7 @@ interface ProcessingFormProps {
 }
 
 const ProcessingForm = ({
-  videoFile,
-  videoPath,
+  videoFiles,
   logoFile,
   logoPath,
   position,
@@ -45,18 +44,6 @@ const ProcessingForm = ({
   onFormatChange,
   onProcess
 }: ProcessingFormProps) => {
-  const getMissingRequirements = () => {
-    const missing = [];
-    if (!videoFile) missing.push('Video file');
-    if (!logoFile) missing.push('Logo file');
-    if (!position) missing.push('Logo position');
-    if (!format) missing.push('Output format');
-    return missing;
-  };
-
-  const missingItems = getMissingRequirements();
-  const isReady = missingItems.length === 0 && !isProcessing;
-
   return (
     <div className="space-y-8">
       <UploadSection
@@ -65,42 +52,23 @@ const ProcessingForm = ({
       />
 
       <Card className="w-full">
-        <CardHeader>
-          <CardTitle>3. Processing Options</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ProcessingOptions
-            onPositionChange={onPositionChange}
-            onGreyscaleChange={onGreyscaleChange}
-            onFormatChange={onFormatChange}
-          />
-        </CardContent>
+        <ProcessingOptions
+          onPositionChange={onPositionChange}
+          onGreyscaleChange={onGreyscaleChange}
+          onFormatChange={onFormatChange}
+        />
       </Card>
 
       <div className="flex justify-center">
         <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <Button
-                  onClick={onProcess}
-                  disabled={!isReady}
-                  className="bg-[#1EAEDB] hover:bg-[#1EAEDB]/90 text-white px-8 py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  4. Process Video
-                </Button>
-              </div>
-            </TooltipTrigger>
-            {!isReady && (
-              <TooltipContent>
-                <p>
-                  {isProcessing
-                    ? "Processing in progress..."
-                    : `Missing required items: ${missingItems.join(', ')}`}
-                </p>
-              </TooltipContent>
-            )}
-          </Tooltip>
+          <RequirementsCheck
+            videoFiles={videoFiles}
+            logoFile={logoFile}
+            position={position}
+            format={format}
+            isProcessing={isProcessing}
+            onProcess={onProcess}
+          />
         </TooltipProvider>
       </div>
 
