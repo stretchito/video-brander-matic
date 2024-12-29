@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDropzone } from 'react-dropzone';
+import { toast } from 'sonner';
 import FileList from './FileList';
 import FileSizeValidator from './upload/FileSizeValidator';
 import FileOptionsManager from './upload/FileOptionsManager';
@@ -31,20 +32,28 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
 
         const { getRootProps, getInputProps, isDragActive } = useDropzone({
           onDrop: async (files) => {
-            // Prevent processing if files are already being processed
-            if (isProcessing) {
-              console.log('Files are currently being processed, ignoring new drop');
-              return;
+            try {
+              // Prevent processing if files are already being processed
+              if (isProcessing) {
+                console.log('Files are currently being processed, ignoring new drop');
+                toast.warning('Please wait for current files to finish processing');
+                return;
+              }
+              
+              console.log('Files dropped:', files.map(f => ({ name: f.name, size: f.size })));
+              
+              // Clear previous files before setting new ones to prevent duplicates
+              setDroppedFiles([]);
+              setFileOptions({});
+              
+              // Set new files after a short delay to ensure cleanup is complete
+              setTimeout(() => {
+                setDroppedFiles(files);
+              }, 0);
+            } catch (error) {
+              console.error('Error in onDrop:', error);
+              toast.error('Error processing dropped files');
             }
-            
-            // Clear previous files before setting new ones to prevent duplicates
-            setDroppedFiles([]);
-            setFileOptions({});
-            
-            // Set new files after a short delay to ensure cleanup is complete
-            setTimeout(() => {
-              setDroppedFiles(files);
-            }, 0);
           },
           accept: {
             'video/*': ['.mp4', '.mov', '.avi', '.webm']
