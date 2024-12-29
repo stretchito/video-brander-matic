@@ -1,17 +1,31 @@
 import { Cloudinary } from '@cloudinary/url-gen';
+import { supabase } from '@/integrations/supabase/client';
 
-const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
-const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
+// Initialize with empty values, will be updated when secrets are fetched
+let cloudinaryConfig = {
+  cloudName: '',
+  apiKey: '',
+  apiSecret: ''
+};
 
-if (!cloudName || !apiKey || !apiSecret) {
-  console.error('Cloudinary credentials are not properly configured');
-}
+// Function to initialize Cloudinary with secrets from Supabase
+export const initCloudinary = async () => {
+  const { data: secrets, error } = await supabase.functions.invoke('get-cloudinary-config');
+  
+  if (error) {
+    console.error('Error fetching Cloudinary configuration:', error);
+    return;
+  }
+
+  if (secrets) {
+    cloudinaryConfig = secrets;
+  }
+};
 
 export const cloudinary = new Cloudinary({
   cloud: {
-    cloudName: cloudName || '',
-    apiKey: apiKey,
-    apiSecret: apiSecret
+    cloudName: cloudinaryConfig.cloudName,
+    apiKey: cloudinaryConfig.apiKey,
+    apiSecret: cloudinaryConfig.apiSecret
   }
 });

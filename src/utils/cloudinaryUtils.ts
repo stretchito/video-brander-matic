@@ -4,6 +4,7 @@ import { source } from '@cloudinary/url-gen/actions/overlay';
 import { Position } from '@cloudinary/url-gen/qualifiers/position';
 import { Gravity } from '@cloudinary/url-gen/qualifiers/gravity';
 import { PositionType, OverlayPosition } from '@/types/videoProcessing';
+import { supabase } from '@/integrations/supabase/client';
 
 export const getOverlayPosition = (position: PositionType): OverlayPosition => {
   switch (position) {
@@ -21,21 +22,24 @@ export const getOverlayPosition = (position: PositionType): OverlayPosition => {
 };
 
 export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
+  // Get Cloudinary configuration from Supabase Edge Function
+  const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
+  
+  if (configError || !config) {
+    throw new Error('Could not fetch Cloudinary configuration');
+  }
+
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', 'ml_default');
+  formData.append('api_key', config.apiKey);
   
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
-  
-  if (!cloudName || !apiKey) {
+  if (!config.cloudName) {
     throw new Error('Cloudinary credentials are not properly configured');
   }
   
-  formData.append('api_key', apiKey);
-  
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
+    `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`,
     {
       method: 'POST',
       body: formData,
