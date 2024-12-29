@@ -41,21 +41,10 @@ export const useMultiFileUpload = ({ bucket, fileTypes, onFileSelect }: UseMulti
           }
         }));
 
-        // Create upload event with progress tracking
+        // Create upload event
         const { error: uploadError } = await supabase.storage
           .from(bucket)
-          .upload(filePath, file, {
-            onUploadProgress: (progress) => {
-              const percent = (progress.loaded / progress.total) * 100;
-              setUploadStates(prev => ({
-                ...prev,
-                [file.name]: {
-                  ...prev[file.name],
-                  progress: Math.round(percent)
-                }
-              }));
-            }
-          });
+          .upload(filePath, file);
 
         if (uploadError) {
           throw uploadError;
