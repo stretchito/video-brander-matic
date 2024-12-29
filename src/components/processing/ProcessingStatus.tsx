@@ -40,7 +40,10 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
   // Parse video URLs from currentAction if it's a completed status
   const getVideoUrls = () => {
     if (status === 'completed' && currentAction.includes('http')) {
-      return currentAction.split(',').map(url => url.trim());
+      // Ensure we're getting the full Cloudinary URL
+      return currentAction.split(',')
+        .map(url => url.trim())
+        .filter(url => url.startsWith('https://res.cloudinary.com'));
     }
     return [];
   };
@@ -75,7 +78,7 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
           </CardHeader>
           <CardContent>
             <p className="font-medium">
-              {status === 'completed' && currentAction.includes('http') ? (
+              {status === 'completed' && videoUrls.length > 0 ? (
                 <span className="text-green-600 font-bold">Success!!</span>
               ) : (
                 currentAction

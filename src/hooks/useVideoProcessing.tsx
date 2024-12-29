@@ -3,11 +3,17 @@ import { toast } from 'sonner';
 import { useVideoState } from './useVideoState';
 import { useProcessingStatus } from './useProcessingStatus';
 import { useCloudinaryProcessing } from './useCloudinaryProcessing';
+import { useEffect } from 'react';
 
 export const useVideoProcessing = () => {
   const videoState = useVideoState();
   const processingStatus = useProcessingStatus();
   const { processVideo } = useCloudinaryProcessing();
+
+  // Clear videos on page load/refresh
+  useEffect(() => {
+    videoState.setVideoFiles([]);
+  }, []);
 
   const handleProcess = async () => {
     try {
@@ -18,6 +24,8 @@ export const useVideoProcessing = () => {
 
       processingStatus.setIsProcessing(true);
       processingStatus.updateStatus('processing', 'Preparing files...', 10);
+
+      const processedUrls: string[] = [];
 
       for (const [index, { file }] of videoState.videoFiles.entries()) {
         processingStatus.updateStatus(
@@ -41,6 +49,8 @@ export const useVideoProcessing = () => {
           videoState.format
         );
 
+        processedUrls.push(finalVideoUrl);
+
         const { error: jobError } = await supabase
           .from('processing_jobs')
           .insert({
@@ -57,14 +67,13 @@ export const useVideoProcessing = () => {
         if (jobError) {
           throw jobError;
         }
-
-        processingStatus.setProcessedVideoUrl(finalVideoUrl);
-        processingStatus.updateStatus(
-          'completed',
-          finalVideoUrl,
-          100
-        );
       }
+
+      processingStatus.updateStatus(
+        'completed',
+        processedUrls.join(','),
+        100
+      );
 
       toast.success('Video processing completed!');
 

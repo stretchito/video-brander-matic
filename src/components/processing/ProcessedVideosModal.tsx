@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from 'lucide-react';
@@ -20,6 +21,9 @@ const ProcessedVideosModal = ({ isOpen, onClose, videoUrls }: ProcessedVideosMod
       <DialogContent className="max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Processed Videos</DialogTitle>
+          <DialogDescription>
+            Click the buttons below to open your processed videos
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {videoUrls.map((url, index) => (
