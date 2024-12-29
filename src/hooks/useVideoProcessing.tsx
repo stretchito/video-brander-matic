@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { cloudinary } from '@/integrations/cloudinary/config';
 import { toast } from 'sonner';
-import { PositionType, ProcessingStatus } from '@/types/videoProcessing';
+import { PositionType, ProcessingStatus, VideoFormat } from '@/types/videoProcessing';
 import { uploadToCloudinary, getOverlayPosition } from '@/utils/cloudinaryUtils';
 
 export const useVideoProcessing = () => {
@@ -12,7 +12,7 @@ export const useVideoProcessing = () => {
   const [logoPath, setLogoPath] = useState<string>('');
   const [position, setPosition] = useState<PositionType>('top-right');
   const [greyscale, setGreyscale] = useState(false);
-  const [format, setFormat] = useState('mp4');
+  const [format, setFormat] = useState<VideoFormat>('mp4');
   const [status, setStatus] = useState<ProcessingStatus>('waiting');
   const [currentAction, setCurrentAction] = useState('Waiting to start...');
   const [progress, setProgress] = useState(0);
