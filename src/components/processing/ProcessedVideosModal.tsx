@@ -3,12 +3,11 @@ import JSZip from 'jszip';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import VideoItem from './modal/VideoItem';
+import VideoList from './modal/VideoList';
 import DownloadSection from './modal/DownloadSection';
+import ThumbnailGenerator from './modal/ThumbnailGenerator';
+import ModalHeader from './modal/ModalHeader';
 
 interface ProcessedVideosModalProps {
   isOpen: boolean;
@@ -40,32 +39,6 @@ const ProcessedVideosModal = ({
       setCompressionStatus('idle');
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    // Generate thumbnails for each video
-    const uniqueUrls = Array.from(new Set(videoUrls));
-    uniqueUrls.forEach(url => {
-      if (!thumbnails[url]) {
-        const video = document.createElement('video');
-        video.crossOrigin = "anonymous";
-        video.src = url;
-        
-        video.addEventListener('loadeddata', () => {
-          video.currentTime = 1; // Seek to 1 second
-        });
-
-        video.addEventListener('seeked', () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const thumbnail = canvas.toDataURL('image/jpeg');
-          setThumbnails(prev => ({ ...prev, [url]: thumbnail }));
-        });
-      }
-    });
-  }, [videoUrls]);
 
   const handleCheckboxChange = (url: string) => {
     setSelectedVideos(prev => 
@@ -125,31 +98,22 @@ const ProcessedVideosModal = ({
     link.click();
   };
 
-  // Remove duplicate URLs
-  const uniqueVideoUrls = Array.from(new Set(videoUrls));
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[600px] w-[95vw] overflow-y-auto max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle>Processed Videos</DialogTitle>
-          <Progress 
-            value={progress} 
-            className="w-full mt-2"
-            indicatorClassName={status === 'completed' ? 'bg-green-500' : 'bg-primary'}
-          />
-        </DialogHeader>
+        <ModalHeader status={status} progress={progress} />
+        <ThumbnailGenerator
+          videoUrls={videoUrls}
+          thumbnails={thumbnails}
+          setThumbnails={setThumbnails}
+        />
         <div className="space-y-4">
-          {uniqueVideoUrls.map((url, index) => (
-            <VideoItem
-              key={url}
-              url={url}
-              index={index}
-              thumbnail={thumbnails[url]}
-              isSelected={selectedVideos.includes(url)}
-              onSelect={() => handleCheckboxChange(url)}
-            />
-          ))}
+          <VideoList
+            videoUrls={videoUrls}
+            thumbnails={thumbnails}
+            selectedVideos={selectedVideos}
+            onSelect={handleCheckboxChange}
+          />
           <DownloadSection
             selectedCount={selectedVideos.length}
             compressionStatus={compressionStatus}
