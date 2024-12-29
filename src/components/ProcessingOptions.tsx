@@ -8,7 +8,7 @@ import { PositionType } from '@/types/videoProcessing';
 interface ProcessingOptionsProps {
   onPositionChange: (position: PositionType) => void;
   onGreyscaleChange: (enabled: boolean) => void;
-  onFormatChange: (format: string) => void;
+  onFormatChange: (format: 'mp4' | 'mov' | 'avi' | 'webm') => void;
 }
 
 const ProcessingOptions = ({

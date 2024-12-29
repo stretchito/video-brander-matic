@@ -1,12 +1,13 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { PositionType } from '@/types/videoProcessing';
 
 interface RequirementsCheckProps {
   videoFiles: { file: File; path: string }[];
   logoFile: File | null;
-  position: string;
-  format: string;
+  position: PositionType;
+  format: 'mp4' | 'mov' | 'avi' | 'webm';
   isProcessing: boolean;
   onProcess: () => Promise<void>;
 }

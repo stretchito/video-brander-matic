@@ -6,23 +6,24 @@ import ProcessingOptions from '../ProcessingOptions';
 import ProcessingStatus from './ProcessingStatus';
 import UploadSection from './UploadSection';
 import RequirementsCheck from './RequirementsCheck';
+import { PositionType } from '@/types/videoProcessing';
 
 interface ProcessingFormProps {
   videoFiles: { file: File; path: string }[];
   logoFile: File | null;
   logoPath: string;
-  position: string;
+  position: PositionType;
   greyscale: boolean;
-  format: string;
+  format: 'mp4' | 'mov' | 'avi' | 'webm';
   status: 'waiting' | 'processing' | 'completed' | 'error';
   currentAction: string;
   progress: number;
   isProcessing: boolean;
   onVideoSelect: (file: File, path: string) => void;
   onLogoSelect: (file: File, path: string) => void;
-  onPositionChange: (position: string) => void;
+  onPositionChange: (position: PositionType) => void;
   onGreyscaleChange: (enabled: boolean) => void;
-  onFormatChange: (format: string) => void;
+  onFormatChange: (format: 'mp4' | 'mov' | 'avi' | 'webm') => void;
   onProcess: () => Promise<void>;
 }
 
