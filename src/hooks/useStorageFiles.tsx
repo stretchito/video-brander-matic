@@ -15,30 +15,22 @@ export const useStorageFiles = () => {
   const loadFiles = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setFiles([]);
+        return;
+      }
 
-      const { data: jobs, error: jobsError } = await supabase
-        .from('processing_jobs')
-        .select('video_path, logo_path')
-        .eq('user_id', user.id);
+      const [videoFiles, logoFiles] = await Promise.all([
+        supabase.storage.from('videos').list(user.id),
+        supabase.storage.from('logos').list(user.id)
+      ]);
 
-      if (jobsError) throw jobsError;
-
-      const { data: videoFiles, error: videoError } = await supabase.storage
-        .from('videos')
-        .list(user.id);
-      
-      if (videoError) throw videoError;
-
-      const { data: logoFiles, error: logoError } = await supabase.storage
-        .from('logos')
-        .list(user.id);
-        
-      if (logoError) throw logoError;
+      if (videoFiles.error) throw videoFiles.error;
+      if (logoFiles.error) throw logoFiles.error;
 
       const allFiles = [
-        ...(videoFiles || []).map(f => ({ ...f, bucket: 'videos' })),
-        ...(logoFiles || []).map(f => ({ ...f, bucket: 'logos' }))
+        ...(videoFiles.data || []).map(f => ({ ...f, bucket: 'videos' })),
+        ...(logoFiles.data || []).map(f => ({ ...f, bucket: 'logos' }))
       ];
 
       setFiles(allFiles.map(file => ({
@@ -65,8 +57,8 @@ export const useStorageFiles = () => {
 
       if (error) throw error;
 
+      setFiles(prev => prev.filter(f => f.path !== path));
       toast.success('File deleted successfully');
-      loadFiles();
     } catch (error) {
       console.error('Error deleting file:', error);
       toast.error('Failed to delete file');
@@ -78,19 +70,23 @@ export const useStorageFiles = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      for (const file of files) {
+      const deletePromises = files.map(file => {
         const [bucket, ...pathParts] = file.path.split('/');
         const filePath = pathParts.join('/');
-        
-        const { error } = await supabase.storage
+        return supabase.storage
           .from(bucket)
           .remove([filePath]);
+      });
 
-        if (error) throw error;
+      const results = await Promise.all(deletePromises);
+      const errors = results.filter(result => result.error);
+
+      if (errors.length > 0) {
+        throw new Error(`Failed to delete ${errors.length} files`);
       }
 
+      setFiles([]);
       toast.success('All files deleted successfully');
-      loadFiles();
     } catch (error) {
       console.error('Error deleting all files:', error);
       toast.error('Failed to delete all files');
