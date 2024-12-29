@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import VideoPlayerModal from './VideoPlayerModal';
+import ProcessedVideosModal from './ProcessedVideosModal';
 import { PlayCircle } from 'lucide-react';
 
 interface ProcessingStatusProps {
@@ -13,7 +13,7 @@ interface ProcessingStatusProps {
 }
 
 const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusProps) => {
-  const [openModals, setOpenModals] = useState<{ [key: string]: boolean }>({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const getStatusColor = () => {
     switch (status) {
@@ -47,22 +47,6 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
 
   const videoUrls = getVideoUrls();
   const hasMultipleVideos = videoUrls.length > 1;
-
-  const handleOpenModal = (url: string) => {
-    setOpenModals(prev => ({ ...prev, [url]: true }));
-  };
-
-  const handleCloseModal = (url: string) => {
-    setOpenModals(prev => ({ ...prev, [url]: false }));
-  };
-
-  const handleOpenAllModals = () => {
-    const newModals = videoUrls.reduce((acc, url) => {
-      acc[url] = true;
-      return acc;
-    }, {} as { [key: string]: boolean });
-    setOpenModals(newModals);
-  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,12 +84,12 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
             {status === 'completed' && videoUrls.length > 0 && (
               <div className="mt-2">
                 <Button
-                  onClick={handleOpenAllModals}
+                  onClick={() => setIsModalOpen(true)}
                   variant="outline"
                   className="w-full flex items-center gap-2"
                 >
                   <PlayCircle className="w-4 h-4" />
-                  Play {hasMultipleVideos ? 'Videos' : 'Video'}
+                  View {hasMultipleVideos ? 'Videos' : 'Video'}
                 </Button>
               </div>
             )}
@@ -113,17 +97,11 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {videoUrls.map((url, index) => (
-          <VideoPlayerModal
-            key={url}
-            isOpen={!!openModals[url]}
-            onClose={() => handleCloseModal(url)}
-            videoUrl={url}
-            title={`Processed Video ${index + 1}`}
-          />
-        ))}
-      </div>
+      <ProcessedVideosModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        videoUrls={videoUrls}
+      />
     </div>
   );
 };

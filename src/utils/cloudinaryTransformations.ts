@@ -32,19 +32,11 @@ const calculatePosition = (
   const scaledX = Math.round(basePos.x * scaleX);
   const scaledY = Math.round(basePos.y * scaleY);
 
-  // For center and bottom positions, use center gravity
-  if (position === 'center' || position === 'bottom') {
-    return {
-      x: 0,
-      y: scaledY,
-      gravity: 'center'
-    };
-  }
-
+  // Use absolute positioning for all positions
   return {
     x: scaledX,
     y: scaledY,
-    gravity: position === 'top-right' ? 'north_east' : 'north_west'
+    gravity: 'north_west'
   };
 };
 
@@ -64,10 +56,10 @@ export const buildTransformationString = (
   // Calculate dynamic position
   const logoPosition = calculatePosition(position, videoMetadata);
 
-  // Add logo overlay with correct positioning and size constraints
+  // Add logo overlay with absolute positioning
   transformations.push(
     `l_${logoPublicId.replace(/\//g, ':')}/c_scale,h_200,w_200` +
-    `/g_${logoPosition.gravity},x_${logoPosition.x},y_${logoPosition.y},fl_layer_apply`
+    `/g_north_west,x_${logoPosition.x},y_${logoPosition.y},fl_layer_apply`
   );
 
   return transformations.join('/');
