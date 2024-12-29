@@ -6,17 +6,26 @@ import { Transformation } from '@cloudinary/url-gen';
 import { grayscale } from '@cloudinary/url-gen/actions/effect';
 import { source } from '@cloudinary/url-gen/actions/overlay';
 import { Position } from '@cloudinary/url-gen/qualifiers/position';
-import { compass } from '@cloudinary/url-gen/qualifiers/gravity';
+import { gravity } from '@cloudinary/url-gen/qualifiers';
+
+type PositionType = 'top-left' | 'top-right' | 'bottom' | 'center';
+type ProcessingStatus = 'waiting' | 'processing' | 'completed' | 'error';
+
+interface OverlayPosition {
+  gravity: gravity.Gravity;
+  x: number;
+  y: number;
+}
 
 export const useVideoProcessing = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPath, setVideoPath] = useState<string>('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPath, setLogoPath] = useState<string>('');
-  const [position, setPosition] = useState('top-right');
+  const [position, setPosition] = useState<PositionType>('top-right');
   const [greyscale, setGreyscale] = useState(false);
   const [format, setFormat] = useState('mp4');
-  const [status, setStatus] = useState<'waiting' | 'processing' | 'completed' | 'error'>('waiting');
+  const [status, setStatus] = useState<ProcessingStatus>('waiting');
   const [currentAction, setCurrentAction] = useState('Waiting to start...');
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -39,6 +48,21 @@ export const useVideoProcessing = () => {
     }
 
     return await response.json();
+  };
+
+  const getOverlayPosition = (position: PositionType): OverlayPosition => {
+    switch (position) {
+      case 'top-left':
+        return { gravity: gravity.northwest(), x: 10, y: 10 };
+      case 'top-right':
+        return { gravity: gravity.northeast(), x: 10, y: 10 };
+      case 'bottom':
+        return { gravity: gravity.south(), x: 0, y: 10 };
+      case 'center':
+        return { gravity: gravity.center(), x: 0, y: 0 };
+      default:
+        return { gravity: gravity.northwest(), x: 10, y: 10 };
+    }
   };
 
   const handleProcess = async () => {
@@ -125,21 +149,6 @@ export const useVideoProcessing = () => {
       toast.error('Error processing video');
     } finally {
       setIsProcessing(false);
-    }
-  };
-
-  const getOverlayPosition = (position: string): { gravity: typeof compass; x: number; y: number } => {
-    switch (position) {
-      case 'top-left':
-        return { gravity: compass.northWest(), x: 10, y: 10 };
-      case 'top-right':
-        return { gravity: compass.northEast(), x: 10, y: 10 };
-      case 'bottom':
-        return { gravity: compass.south(), x: 0, y: 10 };
-      case 'center':
-        return { gravity: compass.center(), x: 0, y: 0 };
-      default:
-        return { gravity: compass.northWest(), x: 10, y: 10 };
     }
   };
 
