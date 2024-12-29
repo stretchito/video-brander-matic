@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload } from 'lucide-react';
 import FileList from './FileList';
 import { useMultiFileUpload } from '@/hooks/useMultiFileUpload';
 import { toast } from 'sonner';
+import UploadDropzone from './upload/UploadDropzone';
 
 interface VideoUploaderProps {
   onVideoSelect: (file: File, path: string, options?: { transcription?: boolean; captions?: boolean }) => void;
@@ -105,24 +105,9 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
 
   return (
     <div className="space-y-4">
-      <div
-        {...getRootProps()}
-        className={`p-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-200 ${
-          isDragActive ? 'border-accent bg-accent/10' : 'border-gray-300 hover:border-accent'
-        }`}
-      >
+      <UploadDropzone {...getRootProps()} isDragActive={isDragActive}>
         <input {...getInputProps()} />
-        <div className="flex flex-col items-center justify-center text-center">
-          <Upload className="w-12 h-12 mb-4 text-gray-400" />
-          <p className="mb-2 text-lg font-medium">
-            {isDragActive ? 'Drop your videos here' : 'Drag & drop your videos here'}
-          </p>
-          <p className="text-sm text-gray-500">or click to select files</p>
-          <p className="mt-2 text-xs text-gray-400">Max file size: 25MB, Total limit: 500MB</p>
-          <p className="text-xs text-gray-400">Supported formats: MP4, MOV, AVI, WEBM</p>
-          <p className="text-xs text-gray-400 mt-1">Select transcription options after upload</p>
-        </div>
-      </div>
+      </UploadDropzone>
 
       {uploadedFiles.length > 0 && (
         <FileList 
