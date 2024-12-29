@@ -17,42 +17,52 @@ export const getOverlayPosition = (position: PositionType) => {
 };
 
 export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
-  // Get Cloudinary configuration from Supabase Edge Function
-  const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
-  
-  if (configError || !config) {
-    console.error('Cloudinary config error:', configError);
-    throw new Error('Could not fetch Cloudinary configuration');
-  }
-
-  const timestamp = Math.round(new Date().getTime() / 1000);
-  const signature = await generateSignature(timestamp);
-
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('timestamp', timestamp.toString());
-  formData.append('api_key', config.apiKey);
-  formData.append('signature', signature);
-  
-  if (!config.cloudName) {
-    throw new Error('Cloudinary credentials are not properly configured');
-  }
-  
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`,
-    {
-      method: 'POST',
-      body: formData,
+  try {
+    // Get Cloudinary configuration from Supabase Edge Function
+    const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
+    
+    if (configError || !config) {
+      console.error('Cloudinary config error:', configError);
+      throw new Error('Could not fetch Cloudinary configuration');
     }
-  );
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    console.error('Cloudinary upload error:', errorData);
-    throw new Error(`Upload failed: ${errorData.error?.message || 'Unknown error'}`);
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const signature = await generateSignature(timestamp);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('timestamp', timestamp.toString());
+    formData.append('api_key', config.apiKey);
+    formData.append('signature', signature);
+
+    if (!config.cloudName) {
+      throw new Error('Cloudinary credentials are not properly configured');
+    }
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Cloudinary upload error response:', errorText);
+      throw new Error(`Upload failed: ${errorText}`);
+    }
+
+    // Clone the response before reading it as JSON
+    const clonedResponse = response.clone();
+    const responseData = await clonedResponse.json();
+    console.log(`${resourceType} upload response:`, responseData);
+    
+    return responseData;
+  } catch (error) {
+    console.error(`Error uploading ${resourceType} to Cloudinary:`, error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 export const generateSignature = async (timestamp: number, params: Record<string, any> = {}) => {
