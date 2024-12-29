@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React from 'react';
 import { Upload } from 'lucide-react';
 import { DropzoneRootProps } from 'react-dropzone';
 
@@ -6,7 +6,7 @@ interface UploadDropzoneProps extends DropzoneRootProps {
   isDragActive: boolean;
 }
 
-const UploadDropzone = forwardRef<HTMLDivElement, UploadDropzoneProps>(
+const UploadDropzone = React.forwardRef<HTMLDivElement, UploadDropzoneProps>(
   ({ isDragActive, ...rootProps }, ref) => {
     return (
       <div
