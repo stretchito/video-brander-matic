@@ -63,7 +63,13 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
             <CardTitle className="text-sm">Current Action</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-medium">{currentAction}</p>
+            <p className="font-medium">
+              {status === 'completed' && currentAction.includes('http') ? (
+                <span className="text-green-600 font-bold">Success!!</span>
+              ) : (
+                currentAction
+              )}
+            </p>
             {status === 'completed' && currentAction.includes('http') && (
               <div className="mt-2">
                 <Button

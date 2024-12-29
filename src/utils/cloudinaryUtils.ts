@@ -1,8 +1,3 @@
-import { Transformation } from '@cloudinary/url-gen';
-import { grayscale } from '@cloudinary/url-gen/actions/effect';
-import { source } from '@cloudinary/url-gen/actions/overlay';
-import { Position } from '@cloudinary/url-gen/qualifiers/position';
-import { Gravity } from '@cloudinary/url-gen/qualifiers/gravity';
 import { PositionType } from '@/types/videoProcessing';
 import { supabase } from '@/integrations/supabase/client';
 
