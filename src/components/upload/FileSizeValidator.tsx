@@ -43,7 +43,7 @@ const FileSizeValidator = ({
     // Check total size
     if (newTotalSize > maxTotalSize) {
       toast.error(
-        `Total upload size (${(newTotalSize / (1024 * 1024)).toFixed(2)}MB) exceeds ${(maxTotalSize / (1024 * 1024)).toFixed(0)}MB limit`
+        `You have ${(currentTotalSize / (1024 * 1024)).toFixed(2)}MB of files stored. Adding ${(files.reduce((acc, file) => acc + file.size, 0) / (1024 * 1024)).toFixed(2)}MB would exceed the ${(maxTotalSize / (1024 * 1024)).toFixed(0)}MB total limit. Please delete some files first.`
       );
       return;
     }
