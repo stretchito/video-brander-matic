@@ -8,15 +8,31 @@ export function createSupabaseClient() {
 }
 
 export async function getSignedUrl(supabaseClient: any, bucket: string, path: string) {
-  const { data: url } = await supabaseClient.storage
+  console.log(`Getting signed URL for ${bucket}/${path}`);
+  const { data: url, error } = await supabaseClient.storage
     .from(bucket)
     .createSignedUrl(path, 60);
   
-  if (!url?.signedUrl) throw new Error(`Failed to get signed URL for ${path}`);
+  if (error) {
+    console.error('Error getting signed URL:', error);
+    throw error;
+  }
+  
+  if (!url?.signedUrl) {
+    throw new Error(`Failed to get signed URL for ${path}`);
+  }
+  
+  console.log('Signed URL created successfully');
   return url.signedUrl;
 }
 
-export async function uploadProcessedVideo(supabaseClient: any, outputPath: string, fileBuffer: Uint8Array, contentType: string) {
+export async function uploadProcessedVideo(
+  supabaseClient: any, 
+  outputPath: string, 
+  fileBuffer: Uint8Array, 
+  contentType: string
+) {
+  console.log(`Uploading processed video to ${outputPath}`);
   const { error: uploadError } = await supabaseClient.storage
     .from('videos')
     .upload(outputPath, fileBuffer, {
@@ -24,16 +40,35 @@ export async function uploadProcessedVideo(supabaseClient: any, outputPath: stri
       upsert: true
     });
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    console.error('Error uploading processed video:', uploadError);
+    throw uploadError;
+  }
+  
+  console.log('Processed video uploaded successfully');
 }
 
-export async function updateJobStatus(supabaseClient: any, jobId: string, status: string, outputPath?: string, errorMessage?: string) {
+export async function updateJobStatus(
+  supabaseClient: any, 
+  jobId: string, 
+  status: string, 
+  outputPath?: string, 
+  errorMessage?: string
+) {
+  console.log(`Updating job ${jobId} status to ${status}`);
   const updates: any = { status };
   if (outputPath) updates.output_path = outputPath;
   if (errorMessage) updates.error_message = errorMessage;
 
-  await supabaseClient
+  const { error } = await supabaseClient
     .from('processing_jobs')
     .update(updates)
     .eq('id', jobId);
+
+  if (error) {
+    console.error('Error updating job status:', error);
+    throw error;
+  }
+  
+  console.log('Job status updated successfully');
 }

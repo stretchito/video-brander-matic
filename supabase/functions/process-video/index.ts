@@ -63,7 +63,6 @@ Deno.serve(async (req) => {
 
       const inputVideoPath = join(tempDir, `input.${videoPath.split('.').pop()}`);
       const inputLogoPath = join(tempDir, `logo.${logoPath.split('.').pop()}`);
-      const outputVideoPath = join(tempDir, `output.${outputFormat}`);
 
       // Download files
       console.log('Downloading video file...');
@@ -86,9 +85,6 @@ Deno.serve(async (req) => {
         greyscale,
         outputFormat
       );
-
-      // Write processed data to output file
-      await Deno.writeFile(outputVideoPath, processedData);
 
       // Upload processed video
       console.log('Uploading processed video...');

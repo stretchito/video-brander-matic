@@ -34,9 +34,12 @@ export async function processVideo(
     }[position];
 
     // Build filter complex string
-    const filterComplex = greyscale
-      ? `[0:v]split=2[color][gray];[gray]colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3[grayscale];[grayscale][1:v]overlay=${logoPosition}[out]`
-      : `[0:v][1:v]overlay=${logoPosition}[out]`;
+    let filterComplex = '';
+    if (greyscale) {
+      filterComplex = `[0:v]split=2[color][gray];[gray]colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3[grayscale];[grayscale][1:v]overlay=${logoPosition}[out]`;
+    } else {
+      filterComplex = `[0:v][1:v]overlay=${logoPosition}[out]`;
+    }
 
     console.log('Processing video with filter:', filterComplex);
 
