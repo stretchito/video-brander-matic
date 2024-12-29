@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ const ProcessingStatus = ({
   processedCount = 0
 }: ProcessingStatusProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [videoUrls, setVideoUrls] = useState<string[]>([]);
   
   const getStatusColor = () => {
     switch (status) {
@@ -45,16 +46,15 @@ const ProcessingStatus = ({
     return 'bg-[#33C3F0]';
   };
 
-  const getVideoUrls = () => {
+  useEffect(() => {
     if (status === 'completed' && currentAction.includes('http')) {
-      return currentAction.split(',')
+      const urls = currentAction.split(',')
         .map(url => url.trim())
         .filter(url => url.startsWith('https://res.cloudinary.com') && url.endsWith('.mp4'));
+      setVideoUrls(urls);
     }
-    return [];
-  };
+  }, [status, currentAction]);
 
-  const videoUrls = getVideoUrls();
   const hasProcessedVideos = videoUrls.length > 0;
   const allVideosProcessed = processedCount === totalVideos && totalVideos > 0;
   const showSuccessMessage = status === 'completed' && allVideosProcessed;
@@ -108,12 +108,14 @@ const ProcessingStatus = ({
         </Card>
       </div>
 
-      <ProcessedVideosModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        videoUrls={videoUrls}
-        processedCount={processedCount}
-      />
+      {hasProcessedVideos && (
+        <ProcessedVideosModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          videoUrls={videoUrls}
+          processedCount={processedCount}
+        />
+      )}
     </div>
   );
 };
