@@ -21,36 +21,12 @@ export const getOverlayPosition = (position: PositionType): OverlayPosition => {
   }
 };
 
-export const generateSignature = async (timestamp: number, params: Record<string, any> = {}) => {
-  // Get Cloudinary configuration to access the API secret
-  const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
-  
-  if (configError || !config) {
-    throw new Error('Could not fetch Cloudinary configuration for signature generation');
-  }
-
-  const allParams = { timestamp, ...params };
-  
-  // Sort parameters alphabetically
-  const sortedKeys = Object.keys(allParams).sort();
-  const sortedParams = sortedKeys.map(key => `${key}=${allParams[key]}`).join('&');
-  
-  // Use Web Crypto API instead of Node's crypto
-  const encoder = new TextEncoder();
-  const data = encoder.encode(sortedParams + config.apiSecret);
-  
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  return hashHex;
-};
-
 export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
   // Get Cloudinary configuration from Supabase Edge Function
   const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
   
   if (configError || !config) {
+    console.error('Cloudinary config error:', configError);
     throw new Error('Could not fetch Cloudinary configuration');
   }
 
@@ -82,4 +58,26 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
   }
 
   return await response.json();
+};
+
+export const generateSignature = async (timestamp: number, params: Record<string, any> = {}) => {
+  const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
+  
+  if (configError || !config) {
+    console.error('Signature generation error:', configError);
+    throw new Error('Could not fetch Cloudinary configuration for signature generation');
+  }
+
+  const allParams = { timestamp, ...params };
+  const sortedKeys = Object.keys(allParams).sort();
+  const sortedParams = sortedKeys.map(key => `${key}=${allParams[key]}`).join('&');
+  
+  const encoder = new TextEncoder();
+  const data = encoder.encode(sortedParams + config.apiSecret);
+  
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  return hashHex;
 };
