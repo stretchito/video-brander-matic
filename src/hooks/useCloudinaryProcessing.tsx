@@ -31,14 +31,16 @@ export const useCloudinaryProcessing = () => {
       // Build transformation array
       const transformations = [];
       
-      // Add saturation effect if greyscale is enabled (must be first)
+      // Add saturation effect if greyscale is enabled
       if (greyscale) {
         transformations.push('e_saturation:10');
       }
       
       // Add logo overlay with correct positioning and size constraints
+      // Make sure to use the full public_id including folder if present
+      const logoPublicId = logoUpload.public_id.replace(/\//g, ':');
       transformations.push(
-        `l_${logoUpload.public_id}/c_scale,h_100,w_300` + 
+        `l_${logoPublicId}/c_scale,h_100,w_300` + 
         `/g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y},fl_layer_apply`
       );
       
@@ -46,8 +48,9 @@ export const useCloudinaryProcessing = () => {
       const transformationString = transformations.join('/');
       console.log('Transformation string:', transformationString);
       
-      // Create final video URL
+      // Create final video URL with proper version handling
       const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/v${videoUpload.version}/${videoUpload.public_id}.${format}`;
+      console.log('Final video URL:', finalVideoUrl);
       
       // Verify video URL is accessible
       let retryCount = 0;
@@ -61,11 +64,13 @@ export const useCloudinaryProcessing = () => {
             videoReady = true;
             console.log('Video URL verified and accessible');
           } else {
+            console.log(`Attempt ${retryCount + 1}: Response status:`, response.status);
             retryCount++;
             console.log(`Retry ${retryCount}/${maxRetries} - Video not ready yet`);
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
         } catch (error) {
+          console.log(`Attempt ${retryCount + 1} error:`, error);
           retryCount++;
           console.log(`Retry ${retryCount}/${maxRetries} - Error checking video:`, error);
           await new Promise(resolve => setTimeout(resolve, 2000));
