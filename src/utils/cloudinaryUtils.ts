@@ -4,15 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 export const getOverlayPosition = (position: PositionType) => {
   switch (position) {
     case 'top-left':
-      return { gravity: 'north_west', x: 10, y: 10 };
+      return { gravity: 'north_west', x: 60, y: 160 };
     case 'top-right':
-      return { gravity: 'north_east', x: 10, y: 10 };
+      return { gravity: 'north_east', x: 60, y: 160 };
     case 'bottom':
-      return { gravity: 'south', x: 0, y: 10 };
+      return { gravity: 'north', x: 0, y: 260 };
     case 'center':
       return { gravity: 'center', x: 0, y: 0 };
     default:
-      return { gravity: 'north_west', x: 10, y: 10 };
+      return { gravity: 'north_west', x: 60, y: 160 };
   }
 };
 

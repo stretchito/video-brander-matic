@@ -35,7 +35,8 @@ export const useCloudinaryProcessing = () => {
 
       // Add logo overlay with position after any video effects
       const overlayPosition = getOverlayPosition(position);
-      const overlayTransform = `l_${logoUpload.public_id},g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y}`;
+      // Add logo with size constraints (h_75,w_200,c_fit ensures the logo maintains aspect ratio within these limits)
+      const overlayTransform = `l_${logoUpload.public_id},h_75,w_200,c_fit,g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y}`;
       transformations.push(overlayTransform);
 
       // Create final video URL
