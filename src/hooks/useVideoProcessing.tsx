@@ -3,6 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { cloudinary } from '@/integrations/cloudinary/config';
 import { toast } from 'sonner';
 import { Transformation } from '@cloudinary/url-gen';
+import { grayscale } from '@cloudinary/url-gen/actions/effect';
+import { source } from '@cloudinary/url-gen/actions/overlay';
+import { Position } from '@cloudinary/url-gen/qualifiers/position';
+import { compass } from '@cloudinary/url-gen/qualifiers/gravity';
 
 export const useVideoProcessing = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -20,7 +24,7 @@ export const useVideoProcessing = () => {
   const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+    formData.append('upload_preset', 'ml_default');
     
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
@@ -68,16 +72,18 @@ export const useVideoProcessing = () => {
       const transformation = new Transformation();
       
       if (greyscale) {
-        transformation.effect('grayscale');
+        transformation.effect(grayscale());
       }
 
       // Add logo overlay with position
       const overlayPosition = getOverlayPosition(position);
-      transformation
-        .overlay(`l_${logoUpload.public_id}`)
-        .gravity(overlayPosition.gravity)
-        .x(overlayPosition.x || 0)
-        .y(overlayPosition.y || 0);
+      transformation.overlay(
+        source(logoUpload.public_id)
+          .position(new Position()
+            .gravity(overlayPosition.gravity)
+            .offsetX(overlayPosition.x)
+            .offsetY(overlayPosition.y))
+      );
 
       // Create the final video URL with transformations
       const finalVideoUrl = cloudinary
@@ -122,18 +128,18 @@ export const useVideoProcessing = () => {
     }
   };
 
-  const getOverlayPosition = (position: string): { gravity: string; x?: number; y?: number } => {
+  const getOverlayPosition = (position: string): { gravity: typeof compass; x: number; y: number } => {
     switch (position) {
       case 'top-left':
-        return { gravity: 'north_west', x: 10, y: 10 };
+        return { gravity: compass.northWest(), x: 10, y: 10 };
       case 'top-right':
-        return { gravity: 'north_east', x: 10, y: 10 };
+        return { gravity: compass.northEast(), x: 10, y: 10 };
       case 'bottom':
-        return { gravity: 'south', y: 10 };
+        return { gravity: compass.south(), x: 0, y: 10 };
       case 'center':
-        return { gravity: 'center' };
+        return { gravity: compass.center(), x: 0, y: 0 };
       default:
-        return { gravity: 'north_west', x: 10, y: 10 };
+        return { gravity: compass.northWest(), x: 10, y: 10 };
     }
   };
 
