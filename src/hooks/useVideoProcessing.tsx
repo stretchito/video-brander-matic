@@ -64,7 +64,19 @@ export const useVideoProcessing = () => {
         const transformationString = transformations.join(',');
         const finalVideoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/${transformationString}/${videoUpload.public_id}.${format}`;
         
-        setProcessedVideoUrl(finalVideoUrl);
+        setCurrentAction('Final Processing...');
+        
+        // Verify the video URL is accessible
+        try {
+          const response = await fetch(finalVideoUrl, { method: 'HEAD' });
+          if (!response.ok) {
+            throw new Error('Processed video not yet available');
+          }
+          setProcessedVideoUrl(finalVideoUrl);
+        } catch (error) {
+          console.error('Error verifying video URL:', error);
+          throw new Error('Failed to verify processed video URL');
+        }
 
         // Store job in Supabase
         const { error: jobError } = await supabase
