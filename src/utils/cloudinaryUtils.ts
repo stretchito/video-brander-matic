@@ -2,21 +2,21 @@ import { Transformation } from '@cloudinary/url-gen';
 import { grayscale } from '@cloudinary/url-gen/actions/effect';
 import { source } from '@cloudinary/url-gen/actions/overlay';
 import { Position } from '@cloudinary/url-gen/qualifiers/position';
-import { compass } from '@cloudinary/url-gen/qualifiers/gravity';
+import { Gravity } from '@cloudinary/url-gen/qualifiers/gravity';
 import { PositionType, OverlayPosition } from '@/types/videoProcessing';
 
 export const getOverlayPosition = (position: PositionType): OverlayPosition => {
   switch (position) {
     case 'top-left':
-      return { gravity: compass('north_west'), x: 10, y: 10 };
+      return { gravity: Gravity.compass('north_west'), x: 10, y: 10 };
     case 'top-right':
-      return { gravity: compass('north_east'), x: 10, y: 10 };
+      return { gravity: Gravity.compass('north_east'), x: 10, y: 10 };
     case 'bottom':
-      return { gravity: compass('south'), x: 0, y: 10 };
+      return { gravity: Gravity.compass('south'), x: 0, y: 10 };
     case 'center':
-      return { gravity: compass('center'), x: 0, y: 0 };
+      return { gravity: Gravity.compass('center'), x: 0, y: 0 };
     default:
-      return { gravity: compass('north_west'), x: 10, y: 10 };
+      return { gravity: Gravity.compass('north_west'), x: 10, y: 10 };
   }
 };
 
