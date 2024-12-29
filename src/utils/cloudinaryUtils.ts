@@ -24,9 +24,15 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', 'ml_default');
+  formData.append('api_key', import.meta.env.VITE_CLOUDINARY_API_KEY);
+  
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) {
+    throw new Error('Cloudinary cloud name is not configured');
+  }
   
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
     {
       method: 'POST',
       body: formData,
@@ -34,7 +40,8 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
   );
 
   if (!response.ok) {
-    throw new Error('Upload failed');
+    const errorData = await response.json();
+    throw new Error(`Upload failed: ${errorData.error?.message || 'Unknown error'}`);
   }
 
   return await response.json();
