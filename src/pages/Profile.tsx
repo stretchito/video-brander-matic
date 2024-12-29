@@ -17,6 +17,7 @@ interface Profile {
 const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -25,19 +26,30 @@ const Profile = () => {
   const fetchProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setError('No authenticated user found');
+        return;
+      }
 
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        setError('Profile not found');
+        return;
+      }
+
       setProfile(data);
+      setError(null);
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
+      setError('Failed to load profile');
     } finally {
       setLoading(false);
     }
@@ -66,11 +78,27 @@ const Profile = () => {
   };
 
   if (loading) {
-    return <div>Loading profile...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary to-secondary p-4 md:p-6 flex items-center justify-center">
+        <div className="text-white">Loading profile...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary to-secondary p-4 md:p-6 flex items-center justify-center">
+        <div className="text-white">{error}</div>
+      </div>
+    );
   }
 
   if (!profile) {
-    return <div>Profile not found</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary to-secondary p-4 md:p-6 flex items-center justify-center">
+        <div className="text-white">Profile not found</div>
+      </div>
+    );
   }
 
   return (
