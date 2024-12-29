@@ -16,6 +16,7 @@ export const useVideoProcessing = () => {
   const [currentAction, setCurrentAction] = useState('Waiting to start...');
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processedVideoUrl, setProcessedVideoUrl] = useState<string>('');
 
   const handleProcess = async () => {
     try {
@@ -58,9 +59,12 @@ export const useVideoProcessing = () => {
         const overlayTransform = `l_${logoUpload.public_id},g_${overlayPosition.gravity},x_${overlayPosition.x},y_${overlayPosition.y}`;
         transformations.push(overlayTransform);
 
-        // Create final video URL
+        // Create final video URL with Cloudinary transformations
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
         const transformationString = transformations.join(',');
-        const finalVideoUrl = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/video/upload/${transformationString}/${videoUpload.public_id}.${format}`;
+        const finalVideoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/${transformationString}/${videoUpload.public_id}.${format}`;
+        
+        setProcessedVideoUrl(finalVideoUrl);
 
         // Store job in Supabase
         const { error: jobError } = await supabase
@@ -85,7 +89,7 @@ export const useVideoProcessing = () => {
 
       setProgress(100);
       setStatus('completed');
-      setCurrentAction('Processing completed successfully!');
+      setCurrentAction(processedVideoUrl);
       toast.success('Video processing completed!');
 
     } catch (error) {
