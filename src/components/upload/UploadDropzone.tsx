@@ -22,7 +22,8 @@ const UploadDropzone = React.forwardRef<HTMLDivElement, UploadDropzoneProps>(
             {isDragActive ? 'Drop your videos here' : 'Drag & drop your videos here'}
           </p>
           <p className="text-sm text-gray-500">or click to select files</p>
-          <p className="mt-2 text-xs text-gray-400">Max file size: 25MB, Total limit: 500MB</p>
+          <p className="mt-2 text-xs text-gray-400">Max file size: 25MB, Max batch size: 500MB</p>
+          <p className="text-xs text-gray-400">Total storage limit: 2GB per user</p>
           <p className="text-xs text-gray-400">Supported formats: MP4, MOV, AVI, WEBM</p>
           <p className="text-xs text-gray-400 mt-1">Select transcription options below 👇🏾</p>
         </div>

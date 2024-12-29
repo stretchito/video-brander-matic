@@ -16,6 +16,8 @@ const FileSizeValidator = ({
   maxTotalSize,
   onValidationPass
 }: FileSizeValidatorProps) => {
+  const MAX_STORAGE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB in bytes
+
   React.useEffect(() => {
     const newTotalSize = files.reduce((acc, file) => acc + file.size, 0) + currentTotalSize;
     
@@ -24,7 +26,8 @@ const FileSizeValidator = ({
       currentTotalSize: currentTotalSize / (1024 * 1024) + 'MB',
       newTotalSize: newTotalSize / (1024 * 1024) + 'MB',
       maxFileSize: maxFileSize / (1024 * 1024) + 'MB',
-      maxTotalSize: maxTotalSize / (1024 * 1024) + 'MB'
+      maxTotalSize: maxTotalSize / (1024 * 1024) + 'MB',
+      maxStorageSize: MAX_STORAGE_SIZE / (1024 * 1024 * 1024) + 'GB'
     });
 
     // Check individual file sizes
@@ -40,10 +43,19 @@ const FileSizeValidator = ({
       return;
     }
 
-    // Check total size
-    if (newTotalSize > maxTotalSize) {
+    // Check batch upload size
+    const batchSize = files.reduce((acc, file) => acc + file.size, 0);
+    if (batchSize > maxTotalSize) {
       toast.error(
-        `You have ${(currentTotalSize / (1024 * 1024)).toFixed(2)}MB of files stored. Adding ${(files.reduce((acc, file) => acc + file.size, 0) / (1024 * 1024)).toFixed(2)}MB would exceed the ${(maxTotalSize / (1024 * 1024)).toFixed(0)}MB total limit. Please delete some files first.`
+        `This batch of files (${(batchSize / (1024 * 1024)).toFixed(2)}MB) exceeds the ${(maxTotalSize / (1024 * 1024)).toFixed(0)}MB batch limit`
+      );
+      return;
+    }
+
+    // Check total storage size
+    if (newTotalSize > MAX_STORAGE_SIZE) {
+      toast.error(
+        `You have ${(currentTotalSize / (1024 * 1024)).toFixed(2)}MB of files stored. Adding ${(files.reduce((acc, file) => acc + file.size, 0) / (1024 * 1024)).toFixed(2)}MB would exceed your ${(MAX_STORAGE_SIZE / (1024 * 1024 * 1024)).toFixed(0)}GB storage limit. Please delete some files first.`
       );
       return;
     }
