@@ -1,4 +1,4 @@
-import { createFFmpeg } from '@ffmpeg/ffmpeg';
+import { createFFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.11.0';
 
 export async function processVideo(
   videoData: Uint8Array,

@@ -22,10 +22,7 @@ interface ProcessVideoPayload {
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('OK', {
-      status: 200,
-      headers: corsHeaders
-    });
+    return new Response(null, { headers: corsHeaders });
   }
 
   // Only allow POST requests
@@ -79,24 +76,27 @@ Deno.serve(async (req) => {
 
       // Process video
       console.log('Processing video...');
-      await processVideo({
-        inputPath: inputVideoPath,
-        logoPath: inputLogoPath,
-        outputPath: outputVideoPath,
+      const videoData = await Deno.readFile(inputVideoPath);
+      const logoData = await Deno.readFile(inputLogoPath);
+      
+      const processedData = await processVideo(
+        videoData,
+        logoData,
         position,
         greyscale,
         outputFormat
-      });
+      );
+
+      // Write processed data to output file
+      await Deno.writeFile(outputVideoPath, processedData);
 
       // Upload processed video
       console.log('Uploading processed video...');
       const outputPath = `processed/${jobId}.${outputFormat}`;
-      const fileBuffer = await Deno.readFile(outputVideoPath);
-      
       await uploadProcessedVideo(
         supabaseClient,
         outputPath,
-        fileBuffer,
+        processedData,
         `video/${outputFormat}`
       );
 
