@@ -43,7 +43,7 @@ export const useCloudinaryProcessing = () => {
       const transformationString = transformations.join('/');
       const finalVideoUrl = `https://res.cloudinary.com/${config.cloudName}/video/upload/${transformationString}/v${videoUpload.version}/${videoUpload.public_id}.${format}`;
       
-      console.log('Verifying processed video URL:', finalVideoUrl);
+      console.log('Final Processing...');
       
       // Add a delay to allow Cloudinary to process the video
       await new Promise(resolve => setTimeout(resolve, 2000));

@@ -48,8 +48,8 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
         indicatorClassName={cn(getProgressColor())}
       />
       
-      <div className="flex justify-center gap-4">
-        <Card className={`w-1/2 ${getStatusColor()} transition-colors duration-300`}>
+      <div className="flex flex-col md:flex-row justify-center gap-4">
+        <Card className={`w-full md:w-1/2 ${getStatusColor()} transition-colors duration-300`}>
           <CardHeader>
             <CardTitle className="text-sm">Status</CardTitle>
           </CardHeader>
@@ -58,7 +58,7 @@ const ProcessingStatus = ({ status, currentAction, progress }: ProcessingStatusP
           </CardContent>
         </Card>
 
-        <Card className={`w-1/2 ${status === 'completed' ? 'bg-green-100' : ''}`}>
+        <Card className={`w-full md:w-1/2 ${status === 'completed' ? 'bg-green-100' : ''}`}>
           <CardHeader>
             <CardTitle className="text-sm">Current Action</CardTitle>
           </CardHeader>

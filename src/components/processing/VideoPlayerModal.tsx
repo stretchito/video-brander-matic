@@ -15,14 +15,14 @@ interface VideoPlayerModalProps {
 const VideoPlayerModal = ({ isOpen, onClose, videoUrl }: VideoPlayerModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-[90vw] w-fit">
         <DialogHeader>
           <DialogTitle>Processed Video</DialogTitle>
         </DialogHeader>
-        <div className="aspect-video w-full">
+        <div className="max-w-full overflow-hidden rounded-lg">
           <video 
             controls 
-            className="w-full h-full rounded-lg"
+            className="max-h-[80vh] w-auto"
             src={videoUrl}
           >
             Your browser does not support the video tag.
