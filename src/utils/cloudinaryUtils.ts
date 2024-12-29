@@ -3,10 +3,10 @@ import { grayscale } from '@cloudinary/url-gen/actions/effect';
 import { source } from '@cloudinary/url-gen/actions/overlay';
 import { Position } from '@cloudinary/url-gen/qualifiers/position';
 import { Gravity } from '@cloudinary/url-gen/qualifiers/gravity';
-import { PositionType, OverlayPosition } from '@/types/videoProcessing';
+import { PositionType } from '@/types/videoProcessing';
 import { supabase } from '@/integrations/supabase/client';
 
-export const getOverlayPosition = (position: PositionType): OverlayPosition => {
+export const getOverlayPosition = (position: PositionType) => {
   switch (position) {
     case 'top-left':
       return { gravity: 'north_west', x: 10, y: 10 };

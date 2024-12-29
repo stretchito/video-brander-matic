@@ -5,7 +5,7 @@ export type ProcessingStatus = 'waiting' | 'processing' | 'completed' | 'error';
 export type VideoFormat = 'mp4' | 'mov' | 'avi' | 'webm';
 
 export interface OverlayPosition {
-  gravity: ReturnType<typeof Gravity.compass>;
+  gravity: string;
   x: number;
   y: number;
 }
