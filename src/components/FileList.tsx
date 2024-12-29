@@ -60,7 +60,7 @@ const FileList = ({ files, onTranscriptionChange, onCaptionsChange }: FileListPr
           htmlFor={`captions-${file.path}`}
           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
-          Summary (for social media)
+          Summary (Social)
         </label>
       </div>
     </div>
