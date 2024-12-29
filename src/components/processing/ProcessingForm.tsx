@@ -46,13 +46,20 @@ const ProcessingForm = ({
   onProcess
 }: ProcessingFormProps) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="space-y-4">
+    <>
+      <Card className="w-full h-full">
         <UploadSection
+          type="video"
           onVideoSelect={onVideoSelect}
+        />
+      </Card>
+
+      <Card className="w-full h-full">
+        <UploadSection
+          type="logo"
           onLogoSelect={onLogoSelect}
         />
-      </div>
+      </Card>
 
       <div className="space-y-4">
         <Card className="w-full">
@@ -82,7 +89,7 @@ const ProcessingForm = ({
           progress={progress}
         />
       </div>
-    </div>
+    </>
   );
 };
 

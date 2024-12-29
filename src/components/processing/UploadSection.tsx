@@ -6,18 +6,21 @@ import VideoUploader from '../VideoUploader';
 import LogoUploader from '../LogoUploader';
 
 interface UploadSectionProps {
-  onVideoSelect: (file: File, path: string) => void;
-  onLogoSelect: (file: File, path: string) => void;
+  type: 'video' | 'logo';
+  onVideoSelect?: (file: File, path: string) => void;
+  onLogoSelect?: (file: File, path: string) => void;
 }
 
-const UploadSection = ({ onVideoSelect, onLogoSelect }: UploadSectionProps) => {
+const UploadSection = ({ type, onVideoSelect, onLogoSelect }: UploadSectionProps) => {
+  const isVideo = type === 'video';
+
   return (
     <>
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>1. Select Video Source</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <CardHeader>
+        <CardTitle>{isVideo ? '1. Select Video Source' : '2. Upload Logo'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isVideo ? (
           <Tabs defaultValue="upload">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="upload">Local Upload</TabsTrigger>
@@ -41,17 +44,10 @@ const UploadSection = ({ onVideoSelect, onLogoSelect }: UploadSectionProps) => {
               </div>
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
-
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>2. Upload Logo</CardTitle>
-        </CardHeader>
-        <CardContent>
+        ) : (
           <LogoUploader onLogoSelect={onLogoSelect} />
-        </CardContent>
-      </Card>
+        )}
+      </CardContent>
     </>
   );
 };
