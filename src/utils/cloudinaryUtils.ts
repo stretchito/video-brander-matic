@@ -21,7 +21,14 @@ export const getOverlayPosition = (position: PositionType): OverlayPosition => {
   }
 };
 
-export const generateSignature = (timestamp: number, params: Record<string, any> = {}) => {
+export const generateSignature = async (timestamp: number, params: Record<string, any> = {}) => {
+  // Get Cloudinary configuration to access the API secret
+  const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
+  
+  if (configError || !config) {
+    throw new Error('Could not fetch Cloudinary configuration for signature generation');
+  }
+
   const crypto = require('crypto');
   const allParams = { timestamp, ...params };
   
@@ -31,7 +38,7 @@ export const generateSignature = (timestamp: number, params: Record<string, any>
   
   return crypto
     .createHash('sha256')
-    .update(sortedParams + apiSecret)
+    .update(sortedParams + config.apiSecret)
     .digest('hex');
 };
 
@@ -44,7 +51,7 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
   }
 
   const timestamp = Math.round(new Date().getTime() / 1000);
-  const signature = generateSignature(timestamp);
+  const signature = await generateSignature(timestamp);
 
   const formData = new FormData();
   formData.append('file', file);
