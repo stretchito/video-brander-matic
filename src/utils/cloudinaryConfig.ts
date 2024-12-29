@@ -1,3 +1,5 @@
+import { supabase } from '@/integrations/supabase/client';
+
 export const getCloudinaryConfig = async () => {
   try {
     // Get Cloudinary configuration from Supabase Edge Function
