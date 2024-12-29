@@ -1,27 +1,105 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Image } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { calculateFileHash } from '@/utils/fileHash';
+import { supabase } from '@/integrations/supabase/client';
+import DuplicateFileDialog from './upload/DuplicateFileDialog';
+import { toast } from 'sonner';
 
 interface LogoUploaderProps {
   onLogoSelect: (file: File, path: string) => void;
 }
 
 const LogoUploader = ({ onLogoSelect }: LogoUploaderProps) => {
+  const [duplicateFile, setDuplicateFile] = useState<{ file: File; hash: string; existingPath: string } | null>(null);
+  
   const { uploadProgress, currentFile, handleUpload } = useFileUpload({
     bucket: 'logos',
     fileTypes: ['image'],
     onSuccess: onLogoSelect
   });
 
+  const checkForDuplicates = async (file: File) => {
+    try {
+      const fileHash = await calculateFileHash(file);
+      
+      const { data: existingFiles } = await supabase
+        .from('processing_jobs')
+        .select('logo_path')
+        .eq('logo_hash', fileHash)
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .limit(1);
+
+      if (existingFiles && existingFiles.length > 0) {
+        return { isDuplicate: true, existingPath: existingFiles[0].logo_path, hash: fileHash };
+      }
+
+      return { isDuplicate: false, hash: fileHash };
+    } catch (error) {
+      console.error('Error checking for duplicates:', error);
+      return { isDuplicate: false, hash: '' };
+    }
+  };
+
+  const onDrop = async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    const { isDuplicate, existingPath, hash } = await checkForDuplicates(file);
+    
+    if (isDuplicate && existingPath) {
+      setDuplicateFile({ file, hash, existingPath });
+      return;
+    }
+
+    await handleUpload(acceptedFiles, { metadata: { fileHash: hash } });
+  };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: handleUpload,
+    onDrop,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif']
     },
     multiple: false
   });
+
+  const handleKeepNew = async () => {
+    if (!duplicateFile) return;
+
+    try {
+      // Delete the old file
+      await supabase.storage
+        .from('logos')
+        .remove([duplicateFile.existingPath]);
+
+      // Upload the new file
+      await handleUpload([duplicateFile.file], { metadata: { fileHash: duplicateFile.hash } });
+      
+      toast.success('New logo version uploaded successfully');
+    } catch (error) {
+      console.error('Error handling logo replacement:', error);
+      toast.error('Error replacing logo');
+    }
+
+    setDuplicateFile(null);
+  };
+
+  const handleKeepExisting = async () => {
+    if (!duplicateFile) return;
+
+    try {
+      // Use the existing file
+      onLogoSelect(duplicateFile.file, duplicateFile.existingPath);
+      toast.success('Using existing logo version');
+    } catch (error) {
+      console.error('Error using existing logo:', error);
+      toast.error('Error using existing logo');
+    }
+
+    setDuplicateFile(null);
+  };
 
   const getProgressColor = () => {
     if (uploadProgress === 0) return 'bg-gray-200';
@@ -71,6 +149,14 @@ const LogoUploader = ({ onLogoSelect }: LogoUploaderProps) => {
           )}
         </div>
       )}
+
+      <DuplicateFileDialog
+        isOpen={!!duplicateFile}
+        fileName={duplicateFile?.file.name || ''}
+        onKeepNew={handleKeepNew}
+        onKeepExisting={handleKeepExisting}
+        onClose={() => setDuplicateFile(null)}
+      />
     </div>
   );
 };

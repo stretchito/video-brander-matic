@@ -16,6 +16,7 @@ export type Database = {
           error_message: string | null
           greyscale: boolean
           id: string
+          logo_hash: string | null
           logo_path: string
           output_format: string
           output_path: string | null
@@ -24,6 +25,7 @@ export type Database = {
           transcription_enabled: boolean | null
           updated_at: string
           user_id: string
+          video_hash: string | null
           video_path: string
         }
         Insert: {
@@ -32,6 +34,7 @@ export type Database = {
           error_message?: string | null
           greyscale?: boolean
           id?: string
+          logo_hash?: string | null
           logo_path: string
           output_format: string
           output_path?: string | null
@@ -40,6 +43,7 @@ export type Database = {
           transcription_enabled?: boolean | null
           updated_at?: string
           user_id: string
+          video_hash?: string | null
           video_path: string
         }
         Update: {
@@ -48,6 +52,7 @@ export type Database = {
           error_message?: string | null
           greyscale?: boolean
           id?: string
+          logo_hash?: string | null
           logo_path?: string
           output_format?: string
           output_path?: string | null
@@ -56,6 +61,7 @@ export type Database = {
           transcription_enabled?: boolean | null
           updated_at?: string
           user_id?: string
+          video_hash?: string | null
           video_path?: string
         }
         Relationships: []
