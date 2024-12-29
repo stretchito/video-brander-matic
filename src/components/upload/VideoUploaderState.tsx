@@ -13,6 +13,7 @@ interface VideoUploaderStateProps {
     handleTranscriptionChange: (path: string, enabled: boolean) => void;
     handleCaptionsChange: (path: string, enabled: boolean) => void;
     setDroppedFiles: (files: File[]) => void;
+    setFileOptions: React.Dispatch<React.SetStateAction<Record<string, { transcription: boolean; captions: boolean }>>>;
   }) => React.ReactNode;
 }
 
@@ -74,7 +75,8 @@ const VideoUploaderState = ({ onVideoSelect, children }: VideoUploaderStateProps
     handleValidFiles,
     handleTranscriptionChange,
     handleCaptionsChange,
-    setDroppedFiles
+    setDroppedFiles,
+    setFileOptions
   });
 };
 
