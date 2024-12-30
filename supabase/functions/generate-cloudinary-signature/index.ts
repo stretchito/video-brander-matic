@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createHash } from "https://deno.land/std@0.168.0/hash/mod.ts"
+import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,10 +20,14 @@ serve(async (req) => {
       throw new Error('Cloudinary API secret not configured')
     }
 
-    // Create signature
-    const signature = createHash('sha256')
-      .update(params + apiSecret)
-      .toString()
+    // Create signature using crypto
+    const encoder = new TextEncoder();
+    const data = encoder.encode(params + apiSecret);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    console.log('Generated signature for params:', params);
 
     return new Response(
       JSON.stringify(signature),
