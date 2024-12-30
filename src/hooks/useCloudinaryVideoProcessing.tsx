@@ -1,10 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
-import { useCloudinaryProcessing } from './useCloudinaryProcessing';
+import { useCloudinaryBase } from './useCloudinaryBase';
 import { PositionType, VideoFormat } from '@/types/videoProcessing';
 import { toast } from 'sonner';
 
 export const useCloudinaryVideoProcessing = () => {
-  const { processVideo } = useCloudinaryProcessing();
+  const { processVideo } = useCloudinaryBase();
 
   const processVideoWithCloudinary = async (
     file: File,
@@ -52,13 +52,16 @@ export const useCloudinaryVideoProcessing = () => {
 
       if (jobError) {
         console.error('Error saving job to database:', jobError);
+        toast.error('Error saving processing job');
         throw jobError;
       }
 
       console.log('Processing job saved successfully');
       return finalVideoUrl;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in processVideoWithCloudinary:', error);
+      const errorMessage = error.message || 'Unknown error occurred during video processing';
+      toast.error(errorMessage);
       throw error;
     }
   };
