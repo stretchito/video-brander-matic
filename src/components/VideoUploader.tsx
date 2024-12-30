@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import FileList from './FileList';
 import { useMultiFileUpload } from '@/hooks/useMultiFileUpload';
 import { toast } from 'sonner';
