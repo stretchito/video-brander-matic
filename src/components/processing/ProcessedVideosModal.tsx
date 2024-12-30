@@ -7,11 +7,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Circle, Download, PlayCircle } from 'lucide-react';
-import { Progress } from "@/components/ui/progress";
-import { cn } from '@/lib/utils';
+import VideoItem from './VideoItem';
+import DownloadSection from './DownloadSection';
 
 interface ProcessedVideosModalProps {
   isOpen: boolean;
@@ -62,6 +60,10 @@ const ProcessedVideosModal = ({
     );
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedVideos(checked ? [...videoUrls] : []);
+  };
+
   const downloadSingleVideo = async (url: string) => {
     const response = await fetch(url);
     const blob = await response.blob();
@@ -81,7 +83,6 @@ const ProcessedVideosModal = ({
     setCompressionProgress(10);
     const zip = new JSZip();
     
-    // Add each selected video to the zip
     const totalFiles = selectedVideos.length;
     let completedFiles = 0;
 
@@ -96,7 +97,6 @@ const ProcessedVideosModal = ({
     await Promise.all(downloads);
     setCompressionProgress(90);
 
-    // Generate and download zip file
     const content = await zip.generateAsync({ 
       type: "blob",
       compression: "DEFLATE",
@@ -125,77 +125,33 @@ const ProcessedVideosModal = ({
               : 'No videos processed yet'}
           </DialogDescription>
         </DialogHeader>
+        {videoUrls.length > 0 && (
+          <div className="flex items-center gap-2 mb-4">
+            <Checkbox
+              checked={selectedVideos.length === videoUrls.length}
+              onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+              className="h-5 w-5"
+            />
+            <span className="text-sm text-muted-foreground">Select All</span>
+          </div>
+        )}
         <div className="space-y-4">
           {videoUrls.map((url, index) => (
-            <div 
-              key={url} 
-              className="flex items-center justify-between p-4 bg-secondary/10 rounded-lg animate-fadeIn"
-            >
-              <div className="flex items-center gap-4">
-                <Checkbox
-                  checked={selectedVideos.includes(url)}
-                  onCheckedChange={() => handleCheckboxChange(url)}
-                  className="h-5 w-5"
-                />
-                <span className="font-medium">Video {index + 1}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => window.open(url, '_blank')}
-                className={cn(
-                  "rounded-full w-18 h-18 p-0 relative overflow-hidden",
-                  "hover:bg-secondary/20 transition-colors"
-                )}
-              >
-                {thumbnails[url] ? (
-                  <div className="relative w-[72px] h-[72px]">
-                    <img 
-                      src={thumbnails[url]} 
-                      alt={`Thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full">
-                      <PlayCircle className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <Circle className="w-full h-full absolute" />
-                    <PlayCircle className="w-6 h-6 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-                  </>
-                )}
-              </Button>
-            </div>
+            <VideoItem
+              key={url}
+              url={url}
+              index={index}
+              isSelected={selectedVideos.includes(url)}
+              thumbnail={thumbnails[url]}
+              onCheckboxChange={handleCheckboxChange}
+            />
           ))}
-          {selectedVideos.length > 0 && (
-            <div className="space-y-2">
-              {compressionStatus !== 'idle' && (
-                <Progress 
-                  value={compressionProgress}
-                  className={cn(
-                    "w-full",
-                    compressionStatus === 'compressing' ? 'bg-secondary' : '',
-                    compressionStatus === 'completed' ? 'bg-green-100' : ''
-                  )}
-                  indicatorClassName={cn(
-                    compressionStatus === 'compressing' ? 'bg-primary' : '',
-                    compressionStatus === 'completed' ? 'bg-green-500' : ''
-                  )}
-                />
-              )}
-              <Button
-                onClick={handleDownloadSelected}
-                className="w-full flex items-center gap-2"
-                disabled={compressionStatus === 'compressing'}
-              >
-                <Download className="w-4 h-4" />
-                {compressionStatus === 'compressing' 
-                  ? 'Compressing...' 
-                  : `Download Selected (${selectedVideos.length})`}
-              </Button>
-            </div>
-          )}
+          <DownloadSection
+            selectedCount={selectedVideos.length}
+            compressionStatus={compressionStatus}
+            compressionProgress={compressionProgress}
+            onDownload={handleDownloadSelected}
+          />
         </div>
       </DialogContent>
     </Dialog>
