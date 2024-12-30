@@ -43,13 +43,13 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorData = await response.json();
       console.error(`Error uploading ${resourceType} to Cloudinary:`, {
         status: response.status,
         statusText: response.statusText,
-        error: errorText
+        error: errorData
       });
-      throw new Error(`Upload failed: ${errorText}`);
+      throw new Error(`Upload failed: ${errorData.error?.message || 'Unknown error'}`);
     }
 
     const result = await response.json();
@@ -58,6 +58,7 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
       url: result.secure_url,
       format: result.format
     });
+
     return result;
   } catch (error) {
     console.error(`Error uploading ${resourceType} to Cloudinary:`, error);
