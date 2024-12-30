@@ -9,9 +9,6 @@ interface ProcessingStatusProps {
   progress: number;
   totalVideos?: number;
   processedCount?: number;
-  steps?: string[];
-  completedSteps?: number;
-  totalSteps?: number;
 }
 
 const ProcessingStatus = ({ 
@@ -19,21 +16,14 @@ const ProcessingStatus = ({
   currentAction, 
   progress,
   totalVideos = 0,
-  processedCount = 0,
-  steps = [],
-  completedSteps = 0,
-  totalSteps = 0
+  processedCount = 0
 }: ProcessingStatusProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [videoUrls, setVideoUrls] = useState<string[]>([]);
   
   useEffect(() => {
-    if (currentAction.startsWith('https://res.cloudinary.com') && 
-        (currentAction.endsWith('.mp4') || 
-         currentAction.endsWith('.mov') || 
-         currentAction.endsWith('.avi') || 
-         currentAction.endsWith('.webm'))) {
-      setVideoUrls(prev => [...new Set([...prev, currentAction])]);
+    if (currentAction.startsWith('https://res.cloudinary.com') && currentAction.endsWith('.mp4')) {
+      setVideoUrls(prev => [...prev, currentAction]);
       setIsModalOpen(true);
     }
   }, [currentAction]);
@@ -45,20 +35,13 @@ const ProcessingStatus = ({
     }
   }, [status]);
 
-  const displayCount = Math.min(processedCount, totalVideos);
-  const displayTotal = totalVideos || videoUrls.length;
   const hasProcessedVideos = videoUrls.length > 0;
-  const allVideosProcessed = displayCount === displayTotal && displayTotal > 0;
+  const allVideosProcessed = processedCount === totalVideos && totalVideos > 0;
   const showSuccessMessage = status === 'completed' && allVideosProcessed;
-
-  const getStepProgress = () => {
-    if (totalSteps === 0) return progress;
-    return Math.round((completedSteps / totalSteps) * 100);
-  };
 
   return (
     <div className="flex flex-col gap-4">
-      <ProcessingProgressBar status={status} progress={getStepProgress()} />
+      <ProcessingProgressBar status={status} progress={progress} />
       
       <div className="flex flex-col md:flex-row justify-center gap-4">
         <StatusCard
@@ -66,13 +49,10 @@ const ProcessingStatus = ({
           status={status}
           currentAction={currentAction}
           hasProcessedVideos={hasProcessedVideos}
-          processedCount={displayCount}
-          totalVideos={displayTotal}
+          processedCount={processedCount}
+          totalVideos={totalVideos}
           onViewVideos={() => setIsModalOpen(true)}
           showSuccessMessage={false}
-          steps={steps}
-          completedSteps={completedSteps}
-          totalSteps={totalSteps}
         />
 
         <StatusCard
@@ -80,13 +60,10 @@ const ProcessingStatus = ({
           status={status}
           currentAction={currentAction}
           hasProcessedVideos={hasProcessedVideos}
-          processedCount={displayCount}
-          totalVideos={displayTotal}
+          processedCount={processedCount}
+          totalVideos={totalVideos}
           onViewVideos={() => setIsModalOpen(true)}
           showSuccessMessage={showSuccessMessage}
-          steps={steps}
-          completedSteps={completedSteps}
-          totalSteps={totalSteps}
         />
       </div>
 
@@ -94,9 +71,7 @@ const ProcessingStatus = ({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         videoUrls={videoUrls}
-        processedCount={displayCount}
-        status={status}
-        progress={progress}
+        processedCount={processedCount}
       />
     </div>
   );

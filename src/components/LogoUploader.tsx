@@ -1,12 +1,8 @@
 import React from 'react';
 import { useDropzone } from 'react-dropzone';
+import { Image } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { useFileUpload } from '@/hooks/useFileUpload';
-import { supabase } from '@/integrations/supabase/client';
-import DuplicateFileDialog from './upload/DuplicateFileDialog';
-import LogoDropzone from './upload/logo/LogoDropzone';
-import LogoProgress from './upload/logo/LogoProgress';
-import { useLogo } from './upload/logo/useLogo';
-import { toast } from 'sonner';
 
 interface LogoUploaderProps {
   onLogoSelect: (file: File, path: string) => void;
@@ -19,63 +15,62 @@ const LogoUploader = ({ onLogoSelect }: LogoUploaderProps) => {
     onSuccess: onLogoSelect
   });
 
-  const { duplicateFile, setDuplicateFile, onDrop } = useLogo(onLogoSelect, handleUpload);
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
+    onDrop: handleUpload,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif']
     },
     multiple: false
   });
 
-  const handleKeepNew = async () => {
-    if (!duplicateFile) return;
-
-    try {
-      await supabase.storage
-        .from('logos')
-        .remove([duplicateFile.existingPath]);
-
-      await handleUpload([duplicateFile.file], { metadata: { fileHash: duplicateFile.hash } });
-      toast.success('New logo version uploaded successfully');
-    } catch (error) {
-      console.error('Error handling logo replacement:', error);
-      toast.error('Error replacing logo');
-    }
-    setDuplicateFile(null);
-  };
-
-  const handleKeepExisting = () => {
-    if (!duplicateFile) return;
-    onLogoSelect(duplicateFile.file, duplicateFile.existingPath);
-    toast.success('Using existing logo version');
-    setDuplicateFile(null);
+  const getProgressColor = () => {
+    if (uploadProgress === 0) return 'bg-gray-200';
+    if (uploadProgress === 100) return 'bg-green-500';
+    return 'bg-blue-400';
   };
 
   return (
     <div className="space-y-4">
-      <LogoDropzone
-        onDrop={onDrop}
-        isDragActive={isDragActive}
-        getInputProps={getInputProps}
-        getRootProps={getRootProps}
-      />
+      <div
+        {...getRootProps()}
+        className={`p-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-200 ${
+          isDragActive ? 'border-accent bg-accent/10' : 'border-gray-300 hover:border-accent'
+        }`}
+      >
+        <input {...getInputProps()} />
+        <div className="flex flex-col items-center justify-center text-center">
+          <Image className="w-12 h-12 mb-4 text-gray-400" />
+          <p className="mb-2 text-lg font-medium">
+            {isDragActive ? 'Drop your logo here' : 'Upload your logo'}
+          </p>
+          <p className="text-sm text-gray-500 mb-2">
+            Select or drag & drop your logo file
+          </p>
+          <div className="text-xs text-gray-400 space-y-1">
+            <p>Accepted formats: PNG (recommended), JPG, JPEG, GIF</p>
+            <p>Minimum resolution: 300x300 pixels</p>
+            <p>PNG with transparency recommended for best results</p>
+          </div>
+        </div>
+      </div>
 
       {uploadProgress > 0 && (
-        <LogoProgress
-          uploadProgress={uploadProgress}
-          currentFile={currentFile}
-        />
+        <div className="space-y-2">
+          <Progress 
+            value={uploadProgress} 
+            className="w-full" 
+            indicatorClassName={`transition-colors duration-300 ${getProgressColor()}`}
+          />
+          <p className="text-sm text-gray-500 text-center">
+            {uploadProgress < 100 ? 'Uploading...' : 'Upload complete'}
+          </p>
+          {currentFile && (
+            <p className="text-sm text-center font-medium">
+              Current file: {currentFile}
+            </p>
+          )}
+        </div>
       )}
-
-      <DuplicateFileDialog
-        isOpen={!!duplicateFile}
-        fileName={duplicateFile?.file.name || ''}
-        onKeepNew={handleKeepNew}
-        onKeepExisting={handleKeepExisting}
-        onClose={() => setDuplicateFile(null)}
-      />
     </div>
   );
 };

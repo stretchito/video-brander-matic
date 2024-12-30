@@ -1,8 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Video, CheckCircle2 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Video } from 'lucide-react';
 
 interface StatusCardProps {
   title: string;
@@ -13,9 +12,6 @@ interface StatusCardProps {
   totalVideos: number;
   onViewVideos: () => void;
   showSuccessMessage: boolean;
-  steps?: string[];
-  completedSteps?: number;
-  totalSteps?: number;
 }
 
 const StatusCard = ({
@@ -26,10 +22,7 @@ const StatusCard = ({
   processedCount,
   totalVideos,
   onViewVideos,
-  showSuccessMessage,
-  steps = [],
-  completedSteps = 0,
-  totalSteps = 0
+  showSuccessMessage
 }: StatusCardProps) => {
   const getStatusColor = () => {
     switch (status) {
@@ -50,19 +43,13 @@ const StatusCard = ({
     if (showSuccessMessage) return 'Success!!';
     if (title === 'Status') return status;
     
+    // For Current Action, show appropriate status message
     if (currentAction.startsWith('https://')) {
       return status === 'completed' 
         ? 'Processing complete!' 
         : 'Processing video...';
     }
     return currentAction;
-  };
-
-  const formatStepName = (step: string) => {
-    return step
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
   };
 
   return (
@@ -74,27 +61,6 @@ const StatusCard = ({
         <p className="font-medium">
           {getDisplayText()}
         </p>
-        
-        {steps.length > 0 && (
-          <ScrollArea className="h-32 mt-4">
-            <div className="space-y-2">
-              {steps.map((step, index) => (
-                <div
-                  key={step}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  {index < completedSteps && (
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  )}
-                  <span className={index < completedSteps ? 'text-green-700' : ''}>
-                    {formatStepName(step)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
-
         {hasProcessedVideos && title !== 'Status' && (
           <div className="mt-2">
             <Button

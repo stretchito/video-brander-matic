@@ -55,6 +55,13 @@ const Login = () => {
                 input: 'auth-input',
               },
             }}
+            providers={[
+              'google',
+              'facebook',
+              'twitter',
+              'discord',
+              'twitch',
+            ]}
             localization={{
               variables: {
                 sign_up: {
@@ -64,6 +71,7 @@ const Login = () => {
                   password_input_placeholder: 'Your password',
                   button_label: 'Sign up',
                   loading_button_label: 'Signing up ...',
+                  social_provider_text: 'Sign in with {{provider}}',
                   link_text: 'Don\'t have an account? Sign up',
                   confirmation_text: 'Check your email for the confirmation link',
                 },
