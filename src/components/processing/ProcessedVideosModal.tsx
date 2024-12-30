@@ -29,6 +29,11 @@ const ProcessedVideosModal = ({
   const [compressionProgress, setCompressionProgress] = useState(0);
   const [compressionStatus, setCompressionStatus] = useState<'idle' | 'compressing' | 'completed'>('idle');
 
+  // Reset selected videos when modal opens/closes or video list changes
+  useEffect(() => {
+    setSelectedVideos([]);
+  }, [isOpen, videoUrls]);
+
   useEffect(() => {
     // Generate thumbnails for each video
     videoUrls.forEach(url => {
@@ -128,11 +133,17 @@ const ProcessedVideosModal = ({
         {videoUrls.length > 0 && (
           <div className="flex items-center gap-2 mb-4">
             <Checkbox
+              id="select-all"
               checked={selectedVideos.length === videoUrls.length}
-              onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+              onCheckedChange={handleSelectAll}
               className="h-5 w-5"
             />
-            <span className="text-sm text-muted-foreground">Select All</span>
+            <label 
+              htmlFor="select-all" 
+              className="text-sm text-muted-foreground cursor-pointer"
+            >
+              Select All
+            </label>
           </div>
         )}
         <div className="space-y-4">
