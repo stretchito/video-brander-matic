@@ -3,7 +3,11 @@ import { generateSignature } from './signature';
 
 export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
   try {
-    console.log(`Uploading ${resourceType}...`, file.name);
+    console.log(`Uploading ${resourceType}...`, {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    });
     
     const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
     
@@ -42,24 +46,38 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
       }
     );
 
+    let responseData;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      responseData = await response.json();
+    } else {
+      responseData = await response.text();
+    }
+
     if (!response.ok) {
-      const errorData = await response.json();
       console.error(`Error uploading ${resourceType} to Cloudinary:`, {
         status: response.status,
         statusText: response.statusText,
-        error: errorData
+        error: responseData
       });
-      throw new Error(`Upload failed: ${errorData.error?.message || 'Unknown error'}`);
+
+      let errorMessage = 'Upload failed';
+      if (typeof responseData === 'object' && responseData.error?.message) {
+        errorMessage = responseData.error.message;
+      } else if (typeof responseData === 'string') {
+        errorMessage = responseData;
+      }
+
+      throw new Error(errorMessage);
     }
 
-    const result = await response.json();
     console.log(`${resourceType} uploaded successfully:`, {
-      publicId: result.public_id,
-      url: result.secure_url,
-      format: result.format
+      publicId: responseData.public_id,
+      url: responseData.secure_url,
+      format: responseData.format
     });
 
-    return result;
+    return responseData;
   } catch (error) {
     console.error(`Error uploading ${resourceType} to Cloudinary:`, error);
     throw error;

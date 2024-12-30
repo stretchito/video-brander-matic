@@ -17,8 +17,16 @@ serve(async (req) => {
     const apiSecret = Deno.env.get('CLOUDINARY_API_SECRET')
 
     if (!apiSecret) {
+      console.error('Cloudinary API secret not configured');
       throw new Error('Cloudinary API secret not configured')
     }
+
+    if (!params) {
+      console.error('No params provided for signature generation');
+      throw new Error('No params provided for signature generation');
+    }
+
+    console.log('Generating signature for params:', params);
 
     // Create signature using crypto
     const encoder = new TextEncoder();
@@ -27,16 +35,19 @@ serve(async (req) => {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    console.log('Generated signature for params:', params);
+    console.log('Generated signature successfully');
 
     return new Response(
       JSON.stringify(signature),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('Error generating signature:', error)
+    console.error('Error generating signature:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'Error generating signature',
+        details: error.toString()
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
