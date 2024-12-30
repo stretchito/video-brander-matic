@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import JSZip from 'jszip';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +9,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import VideoItem from './VideoItem';
 import DownloadSection from './DownloadSection';
+import { useVideoThumbnails } from '@/hooks/useVideoThumbnails';
+import { useVideoDownload } from '@/hooks/useVideoDownload';
 
 interface ProcessedVideosModalProps {
   isOpen: boolean;
@@ -25,37 +26,13 @@ const ProcessedVideosModal = ({
   processedCount
 }: ProcessedVideosModalProps) => {
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
-  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
-  const [compressionProgress, setCompressionProgress] = useState(0);
-  const [compressionStatus, setCompressionStatus] = useState<'idle' | 'compressing' | 'completed'>('idle');
+  const thumbnails = useVideoThumbnails(videoUrls);
+  const { compressionProgress, compressionStatus, handleDownload } = useVideoDownload();
 
   // Reset selected videos when modal opens/closes or video list changes
   useEffect(() => {
     setSelectedVideos([]);
   }, [isOpen, videoUrls]);
-
-  useEffect(() => {
-    // Generate thumbnails for each video
-    videoUrls.forEach(url => {
-      const video = document.createElement('video');
-      video.crossOrigin = "anonymous";
-      video.src = url;
-      
-      video.addEventListener('loadeddata', () => {
-        video.currentTime = 1; // Seek to 1 second
-      });
-
-      video.addEventListener('seeked', () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const thumbnail = canvas.toDataURL('image/jpeg');
-        setThumbnails(prev => ({ ...prev, [url]: thumbnail }));
-      });
-    });
-  }, [videoUrls]);
 
   const handleCheckboxChange = (url: string) => {
     setSelectedVideos(prev => 
@@ -67,56 +44,6 @@ const ProcessedVideosModal = ({
 
   const handleSelectAll = (checked: boolean) => {
     setSelectedVideos(checked ? [...videoUrls] : []);
-  };
-
-  const downloadSingleVideo = async (url: string) => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `processed_video_${Date.now()}.mp4`;
-    link.click();
-  };
-
-  const handleDownloadSelected = async () => {
-    if (selectedVideos.length === 1) {
-      await downloadSingleVideo(selectedVideos[0]);
-      return;
-    }
-
-    setCompressionStatus('compressing');
-    setCompressionProgress(10);
-    const zip = new JSZip();
-    
-    const totalFiles = selectedVideos.length;
-    let completedFiles = 0;
-
-    const downloads = selectedVideos.map(async (url, index) => {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      zip.file(`processed_video_${index + 1}.mp4`, blob);
-      completedFiles++;
-      setCompressionProgress(Math.round((completedFiles / totalFiles) * 80) + 10);
-    });
-
-    await Promise.all(downloads);
-    setCompressionProgress(90);
-
-    const content = await zip.generateAsync({ 
-      type: "blob",
-      compression: "DEFLATE",
-      compressionOptions: {
-        level: 6
-      }
-    });
-
-    setCompressionProgress(100);
-    setCompressionStatus('completed');
-
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(content);
-    link.download = `processed_videos_${Date.now()}.zip`;
-    link.click();
   };
 
   return (
@@ -161,7 +88,7 @@ const ProcessedVideosModal = ({
             selectedCount={selectedVideos.length}
             compressionStatus={compressionStatus}
             compressionProgress={compressionProgress}
-            onDownload={handleDownloadSelected}
+            onDownload={() => handleDownload(selectedVideos)}
           />
         </div>
       </DialogContent>
