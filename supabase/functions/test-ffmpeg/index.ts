@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7'
-import { toBlobURL } from 'https://esm.sh/@ffmpeg/util@0.12.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,26 +51,12 @@ serve(async (req) => {
     console.log('Initializing FFmpeg...')
     const ffmpeg = new FFmpeg()
     
-    // Load FFmpeg with specific configuration
+    // Load FFmpeg with minimal configuration
     console.log('Loading FFmpeg...')
     await ffmpeg.load({
-      coreURL: await toBlobURL(
-        'https://unpkg.com/@ffmpeg/core@0.12.4/dist/esm/ffmpeg-core.js',
-        'text/javascript'
-      ),
-      wasmURL: await toBlobURL(
-        'https://unpkg.com/@ffmpeg/core@0.12.4/dist/esm/ffmpeg-core.wasm',
-        'application/wasm'
-      ),
-      workerURL: await toBlobURL(
-        'https://unpkg.com/@ffmpeg/core@0.12.4/dist/esm/ffmpeg-core.worker.js',
-        'text/javascript'
-      )
-    })
-
-    // Enable logging
-    ffmpeg.on('log', ({ message }) => {
-      console.log('FFmpeg log:', message)
+      log: true,
+      logger: ({ message }) => console.log('FFmpeg:', message),
+      progress: ({ progress }) => console.log('FFmpeg progress:', progress)
     })
 
     console.log('Writing input files...')
