@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7'
+import { fetchFile } from 'https://esm.sh/@ffmpeg/util@0.12.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,18 +52,23 @@ serve(async (req) => {
     console.log('Initializing FFmpeg...')
     const ffmpeg = new FFmpeg()
     
-    // Load FFmpeg with minimal configuration
+    // Load FFmpeg with configuration for Deno environment
     console.log('Loading FFmpeg...')
     await ffmpeg.load({
       log: true,
       logger: ({ message }) => console.log('FFmpeg:', message),
-      progress: ({ progress }) => console.log('FFmpeg progress:', progress)
+      progress: ({ progress }) => console.log('FFmpeg progress:', progress),
+      mainName: 'main',
+      corePath: 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/ffmpeg-core.js'
     })
 
     console.log('Writing input files...')
-    // Write input files
-    await ffmpeg.writeFile('input.mp4', new Uint8Array(await videoData.arrayBuffer()))
-    await ffmpeg.writeFile('logo.png', new Uint8Array(await logoData.arrayBuffer()))
+    // Convert Blob to ArrayBuffer and then to Uint8Array
+    const videoBuffer = await videoData.arrayBuffer()
+    const logoBuffer = await logoData.arrayBuffer()
+    
+    await ffmpeg.writeFile('input.mp4', new Uint8Array(videoBuffer))
+    await ffmpeg.writeFile('logo.png', new Uint8Array(logoBuffer))
 
     // Process video with logo overlay
     console.log('Processing video...')
