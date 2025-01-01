@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7'
-import { fetchFile, toBlobURL } from 'https://esm.sh/@ffmpeg/util@0.12.1'
+import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7/dist/esm/index.js'
+import { fetchFile } from 'https://esm.sh/@ffmpeg/util@0.12.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,38 +26,50 @@ serve(async (req) => {
     )
 
     // Download files from Supabase Storage
+    console.log('Downloading video file...')
     const { data: videoData, error: videoError } = await supabase
       .storage
       .from('videos')
       .download(videoPath)
 
     if (videoError) {
+      console.error('Video download error:', videoError)
       throw new Error(`Error downloading video: ${videoError.message}`)
     }
 
+    console.log('Downloading logo file...')
     const { data: logoData, error: logoError } = await supabase
       .storage
       .from('logos')
       .download(logoPath)
 
     if (logoError) {
+      console.error('Logo download error:', logoError)
       throw new Error(`Error downloading logo: ${logoError.message}`)
     }
 
     // Initialize FFmpeg
+    console.log('Initializing FFmpeg...')
     const ffmpeg = new FFmpeg()
-    console.log('FFmpeg initialized')
+    
+    // Configure FFmpeg to not use SharedArrayBuffer
+    ffmpeg.on('log', ({ message }) => {
+      console.log('FFmpeg log:', message)
+    })
 
     // Load FFmpeg
-    await ffmpeg.load()
-    console.log('FFmpeg loaded')
+    console.log('Loading FFmpeg...')
+    await ffmpeg.load({
+      coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/esm/ffmpeg-core.js'
+    })
 
+    console.log('Writing input files...')
     // Write input files
     await ffmpeg.writeFile('input.mp4', await fetchFile(videoData))
     await ffmpeg.writeFile('logo.png', await fetchFile(logoData))
-    console.log('Files written to FFmpeg')
 
     // Process video with logo overlay
+    console.log('Processing video...')
     await ffmpeg.exec([
       '-i', 'input.mp4',
       '-i', 'logo.png',
@@ -65,16 +77,16 @@ serve(async (req) => {
       '-c:a', 'copy',
       'output.mp4'
     ])
-    console.log('Video processing completed')
 
     // Read the output file
+    console.log('Reading processed file...')
     const outputData = await ffmpeg.readFile('output.mp4')
-    console.log('Output file read')
-
+    
     // Generate output path
     const outputPath = `processed/${crypto.randomUUID()}.mp4`
 
     // Upload processed video back to Supabase Storage
+    console.log('Uploading processed video...')
     const { error: uploadError } = await supabase
       .storage
       .from('videos')
@@ -84,10 +96,9 @@ serve(async (req) => {
       })
 
     if (uploadError) {
+      console.error('Upload error:', uploadError)
       throw new Error(`Error uploading processed video: ${uploadError.message}`)
     }
-
-    console.log('Processed video uploaded successfully')
 
     // Get public URL for the processed video
     const { data: { publicUrl } } = supabase
@@ -95,6 +106,7 @@ serve(async (req) => {
       .from('videos')
       .getPublicUrl(outputPath)
 
+    console.log('Processing completed successfully')
     return new Response(
       JSON.stringify({ 
         success: true, 
