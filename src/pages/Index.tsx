@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import ProcessingForm from '@/components/processing/ProcessingForm';
 import { useVideoProcessing } from '@/hooks/useVideoProcessing';
 import { PositionType, VideoFormat } from '@/types/videoProcessing';
+import { testFFmpegProcessing } from '@/utils/testFFmpeg';
+import { toast } from 'sonner';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -40,6 +42,28 @@ const Index = () => {
     setFormat(newFormat);
   };
 
+  const handleTestFFmpeg = async () => {
+    if (!videoFiles.length || !logoFile) {
+      toast.error('Please upload both a video and logo file first');
+      return;
+    }
+
+    try {
+      toast.info('Starting FFmpeg test...');
+      const result = await testFFmpegProcessing(videoFiles[0].path, logoPath);
+      
+      if (result.success) {
+        toast.success('FFmpeg test successful! Check the processed video.');
+        console.log('Processed video URL:', result.publicUrl);
+      } else {
+        toast.error('FFmpeg test failed');
+      }
+    } catch (error) {
+      console.error('FFmpeg test error:', error);
+      toast.error('Error testing FFmpeg: ' + (error as Error).message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary to-secondary p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6 animate-fadeIn">
@@ -47,13 +71,22 @@ const Index = () => {
           <h1 className="text-2xl md:text-4xl font-bold text-white">
             PM Batch Video Processor
           </h1>
-          <Button 
-            variant="outline" 
-            onClick={handleLogout}
-            className="bg-white hover:bg-gray-100"
-          >
-            Logout
-          </Button>
+          <div className="flex gap-4">
+            <Button 
+              variant="outline"
+              onClick={handleTestFFmpeg}
+              className="bg-white hover:bg-gray-100"
+            >
+              Test FFmpeg
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              className="bg-white hover:bg-gray-100"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
