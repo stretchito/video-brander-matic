@@ -11,19 +11,32 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 204
+    })
   }
 
   try {
+    // Log the incoming request
+    console.log('Received request:', {
+      method: req.method,
+      headers: Object.fromEntries(req.headers.entries())
+    });
+
     const { videoPath, logoPath } = await req.json()
     console.log('Processing video:', videoPath)
     console.log('Using logo:', logoPath)
 
     // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase environment variables')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Download files from Supabase Storage
     console.log('Downloading video file...')
