@@ -47,14 +47,14 @@ const ProcessingForm = ({
 }: ProcessingFormProps) => {
   return (
     <>
-      <Card className="w-full h-full bg-[#2A2F3C] border-[#3A3F4C] shadow-lg">
+      <Card className="w-full h-full bg-white border-[#3A3F4C] shadow-lg">
         <UploadSection
           type="video"
           onVideoSelect={onVideoSelect}
         />
       </Card>
 
-      <Card className="w-full h-full bg-[#2A2F3C] border-[#3A3F4C] shadow-lg">
+      <Card className="w-full h-full bg-white border-[#3A3F4C] shadow-lg">
         <UploadSection
           type="logo"
           onLogoSelect={onLogoSelect}
@@ -62,7 +62,7 @@ const ProcessingForm = ({
       </Card>
 
       <div className="space-y-4">
-        <Card className="w-full bg-[#2A2F3C] border-[#3A3F4C] shadow-lg">
+        <Card className="w-full bg-white border-[#3A3F4C] shadow-lg">
           <ProcessingOptions
             onPositionChange={onPositionChange}
             onGreyscaleChange={onGreyscaleChange}
