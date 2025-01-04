@@ -7,6 +7,7 @@ import { useVideoProcessing } from '@/hooks/useVideoProcessing';
 import { PositionType, VideoFormat } from '@/types/videoProcessing';
 import { testFFmpegProcessing } from '@/utils/testFFmpeg';
 import { toast } from 'sonner';
+import { LogOut } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -65,31 +66,32 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary to-secondary p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6 animate-fadeIn">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl md:text-4xl font-bold text-white">
+    <div className="min-h-screen bg-[#1A1F2C]">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <header className="flex justify-between items-center py-4 px-6 bg-[#2A2F3C] rounded-lg shadow-lg">
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#9b87f5] to-[#6E59A5] bg-clip-text text-transparent">
             PM Batch Video Processor
           </h1>
           <div className="flex gap-4">
             <Button 
               variant="outline"
               onClick={handleTestFFmpeg}
-              className="bg-white hover:bg-gray-100"
+              className="bg-[#7E69AB] text-white hover:bg-[#6E59A5] border-none"
             >
               Test FFmpeg
             </Button>
             <Button 
               variant="outline" 
               onClick={handleLogout}
-              className="bg-white hover:bg-gray-100"
+              className="bg-[#7E69AB] text-white hover:bg-[#6E59A5] border-none"
             >
+              <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
           </div>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <ProcessingForm
             videoFiles={videoFiles}
             logoFile={logoFile}

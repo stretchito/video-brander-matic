@@ -19,16 +19,16 @@ const ProcessingOptions = ({
   return (
     <div className="p-6 space-y-6">
       <div className="space-y-2">
-        <Label>Logo Position</Label>
+        <Label className="text-[#E5DEFF]">Logo Position</Label>
         <Select onValueChange={onPositionChange}>
-          <SelectTrigger>
+          <SelectTrigger className="bg-[#1A1F2C] border-[#3A3F4C] text-[#E5DEFF]">
             <SelectValue placeholder="Select position" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="top-left">Top Left</SelectItem>
-            <SelectItem value="top-right">Top Right</SelectItem>
-            <SelectItem value="bottom">Lower Third</SelectItem>
-            <SelectItem value="center">Center</SelectItem>
+          <SelectContent className="bg-[#2A2F3C] border-[#3A3F4C]">
+            <SelectItem value="top-left" className="text-[#E5DEFF] hover:bg-[#3A3F4C]">Top Left</SelectItem>
+            <SelectItem value="top-right" className="text-[#E5DEFF] hover:bg-[#3A3F4C]">Top Right</SelectItem>
+            <SelectItem value="bottom" className="text-[#E5DEFF] hover:bg-[#3A3F4C]">Lower Third</SelectItem>
+            <SelectItem value="center" className="text-[#E5DEFF] hover:bg-[#3A3F4C]">Center</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -38,28 +38,31 @@ const ProcessingOptions = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div>
-                <Switch onCheckedChange={onGreyscaleChange} />
+                <Switch 
+                  onCheckedChange={onGreyscaleChange}
+                  className="data-[state=checked]:bg-[#9b87f5]"
+                />
               </div>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent className="bg-[#2A2F3C] border-[#3A3F4C] text-[#E5DEFF]">
               <p>Convert video to greyscale while keeping logo in color</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <Label>Greyscale Video</Label>
+        <Label className="text-[#E5DEFF]">Greyscale Video</Label>
       </div>
 
       <div className="space-y-2">
-        <Label>Output Format</Label>
+        <Label className="text-[#E5DEFF]">Output Format</Label>
         <Select onValueChange={onFormatChange}>
-          <SelectTrigger>
+          <SelectTrigger className="bg-[#1A1F2C] border-[#3A3F4C] text-[#E5DEFF]">
             <SelectValue placeholder="Select format" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="mp4">MP4</SelectItem>
-            <SelectItem value="mov">MOV</SelectItem>
-            <SelectItem value="avi">AVI</SelectItem>
-            <SelectItem value="webm">WEBM</SelectItem>
+          <SelectContent className="bg-[#2A2F3C] border-[#3A3F4C]">
+            <SelectItem value="mp4" className="text-[#E5DEFF] hover:bg-[#3A3F4C]">MP4</SelectItem>
+            <SelectItem value="mov" className="text-[#E5DEFF] hover:bg-[#3A3F4C]">MOV</SelectItem>
+            <SelectItem value="avi" className="text-[#E5DEFF] hover:bg-[#3A3F4C]">AVI</SelectItem>
+            <SelectItem value="webm" className="text-[#E5DEFF] hover:bg-[#3A3F4C]">WEBM</SelectItem>
           </SelectContent>
         </Select>
       </div>
