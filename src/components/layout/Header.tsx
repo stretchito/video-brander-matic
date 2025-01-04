@@ -14,14 +14,14 @@ const Header = () => {
   };
 
   return (
-    <header className="flex justify-between items-center py-4 px-6 bg-[#2A2F3C] rounded-lg shadow-lg">
-      <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#9b87f5] to-[#6E59A5] bg-clip-text text-transparent">
+    <header className="flex justify-between items-center py-4 px-6 bg-white rounded-lg shadow-lg">
+      <h1 className="text-2xl md:text-3xl font-bold text-primary">
         PM Batch Video Processor
       </h1>
       <Button 
         variant="outline" 
         onClick={handleLogout}
-        className="bg-[#7E69AB] text-white hover:bg-[#6E59A5] border-none"
+        className="bg-primary text-white hover:bg-secondary border-none"
       >
         <LogOut className="w-4 h-4 mr-2" />
         Logout
