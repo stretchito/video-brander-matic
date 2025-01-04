@@ -9,7 +9,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: corsHeaders,
@@ -18,17 +17,14 @@ serve(async (req) => {
   }
 
   try {
-    // Log the incoming request
     console.log('Received request:', {
       method: req.method,
       headers: Object.fromEntries(req.headers.entries())
     });
 
-    const { videoPath, logoPath } = await req.json()
-    console.log('Processing video:', videoPath)
-    console.log('Using logo:', logoPath)
+    const { videoPath, logoPath, position = 'top-left', greyscale = false, format = 'mp4' } = await req.json()
+    console.log('Processing video:', { videoPath, logoPath, position, greyscale, format })
 
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -38,7 +34,6 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Download files from Supabase Storage
     console.log('Downloading video file...')
     const { data: videoData, error: videoError } = await supabase
       .storage
@@ -61,11 +56,9 @@ serve(async (req) => {
       throw new Error(`Error downloading logo: ${logoError.message}`)
     }
 
-    // Initialize FFmpeg
     console.log('Initializing FFmpeg...')
     const ffmpeg = new FFmpeg()
     
-    // Load FFmpeg with configuration for Deno environment
     console.log('Loading FFmpeg...')
     await ffmpeg.load({
       log: true,
@@ -76,31 +69,51 @@ serve(async (req) => {
     })
 
     console.log('Writing input files...')
-    // Convert Blob to ArrayBuffer and then to Uint8Array
     const videoBuffer = await videoData.arrayBuffer()
     const logoBuffer = await logoData.arrayBuffer()
     
     await ffmpeg.writeFile('input.mp4', new Uint8Array(videoBuffer))
     await ffmpeg.writeFile('logo.png', new Uint8Array(logoBuffer))
 
-    // Process video with logo overlay
+    // Calculate logo position
+    let overlayPosition = '10:10' // default top-left
+    switch (position) {
+      case 'top-right':
+        overlayPosition = 'W-w-10:10'
+        break
+      case 'bottom-left':
+        overlayPosition = '10:H-h-10'
+        break
+      case 'bottom-right':
+        overlayPosition = 'W-w-10:H-h-10'
+        break
+      case 'center':
+        overlayPosition = '(W-w)/2:(H-h)/2'
+        break
+    }
+
+    // Build FFmpeg command
+    const filters = []
+    if (greyscale) {
+      filters.push('hue=s=0') // Apply greyscale effect
+    }
+    filters.push(`[1:v]scale=100:100[logo]`) // Scale logo
+    filters.push(`[0:v]${greyscale ? '[grey];[grey]' : ''}[logo]overlay=${overlayPosition}`) // Add logo overlay
+
     console.log('Processing video...')
     await ffmpeg.exec([
       '-i', 'input.mp4',
       '-i', 'logo.png',
-      '-filter_complex', '[1:v]scale=100:100[logo];[0:v][logo]overlay=10:10',
+      '-filter_complex', filters.join(';'),
       '-c:a', 'copy',
       'output.mp4'
     ])
 
-    // Read the output file
     console.log('Reading processed file...')
     const outputData = await ffmpeg.readFile('output.mp4')
     
-    // Generate output path
-    const outputPath = `processed/${crypto.randomUUID()}.mp4`
+    const outputPath = `processed/${crypto.randomUUID()}.${format}`
 
-    // Upload processed video back to Supabase Storage
     console.log('Uploading processed video...')
     const { error: uploadError } = await supabase
       .storage
@@ -115,7 +128,6 @@ serve(async (req) => {
       throw new Error(`Error uploading processed video: ${uploadError.message}`)
     }
 
-    // Get public URL for the processed video
     const { data: { publicUrl } } = supabase
       .storage
       .from('videos')
