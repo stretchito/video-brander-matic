@@ -126,15 +126,26 @@ async function updateJobProgress(jobId: string, update: {
   errorMessage?: string;
 }) {
   try {
+    // Get current processing steps
+    const { data: currentJob } = await supabase
+      .from('processing_jobs')
+      .select('processing_steps')
+      .eq('id', jobId)
+      .single();
+
+    // Create new processing steps array
+    const processingSteps = currentJob?.processing_steps || [];
+    if (update.currentStep) {
+      processingSteps.push(update.currentStep);
+    }
+
     const { error } = await supabase
       .from('processing_jobs')
       .update({
         status: update.status,
         completed_steps: update.completedSteps,
         total_steps: update.totalSteps,
-        processing_steps: update.currentStep 
-          ? supabase.sql`array_append(processing_steps, ${update.currentStep})`
-          : undefined,
+        processing_steps: processingSteps,
         error_message: update.errorMessage,
         updated_at: new Date().toISOString()
       })
