@@ -7,6 +7,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import fs from 'fs'; // Added fs import
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -43,7 +44,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  console.log('FFmpeg path:', ffmpeg.path);
+  console.log('FFmpeg path:', ffmpeg.path || 'Not set');  // Fixed ffmpeg path access
 });
 
 export default app;

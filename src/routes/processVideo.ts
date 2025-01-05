@@ -14,6 +14,11 @@ interface ProcessVideoRequest {
   }
 }
 
+interface ProcessedVideoResult {
+  outputPath: string;
+  publicUrl?: string;
+}
+
 export const processVideoHandler = async (
   req: Request<{}, any, ProcessVideoRequest>, 
   res: Response
@@ -48,13 +53,13 @@ export const processVideoHandler = async (
       position: options.position || 'top-left',
       greyscale: options.greyscale || false,
       outputFormat: options.output_format || 'mp4'
-    });
+    }) as ProcessedVideoResult;
 
     const { error: updateError } = await supabase
       .from('processing_jobs')
       .update({
         status: 'completed',
-        output_path: processedVideo.publicUrl
+        output_path: processedVideo.outputPath
       })
       .eq('id', data.id);
 
@@ -67,7 +72,7 @@ export const processVideoHandler = async (
     res.json({ 
       message: 'Video processing completed',
       jobId: data.id,
-      outputUrl: processedVideo.publicUrl
+      outputUrl: processedVideo.outputPath
     });
     return;
 
