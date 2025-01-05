@@ -1,44 +1,20 @@
-import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7';
-import { toBlobURL } from 'https://esm.sh/@ffmpeg/util@0.12.1';
-
-export async function initializeFFmpeg(): Promise<FFmpeg> {
-  console.log('Initializing FFmpeg...');
-  const ffmpeg = new FFmpeg();
-  
-  try {
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd';
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-      workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript')
-    });
-    console.log('FFmpeg loaded successfully');
-    return ffmpeg;
-  } catch (error) {
-    console.error('Error initializing FFmpeg:', error);
-    throw new Error(`FFmpeg initialization error: ${error.message}`);
-  }
-}
+import { Command } from "https://deno.land/x/cmd@v1.2.0/mod.ts";
 
 export async function processVideo(
-  ffmpeg: FFmpeg,
-  videoData: Uint8Array,
-  logoData: Uint8Array,
+  inputPath: string,
+  logoPath: string,
   position: string,
   greyscale: boolean,
   format: string
 ): Promise<Uint8Array> {
-  console.log('Processing video with FFmpeg...');
-  
-  try {
-    await ffmpeg.writeFile('input.mp4', videoData);
-    await ffmpeg.writeFile('logo.png', logoData);
-    console.log('Input files written successfully');
+  console.log('Processing video with FFmpeg...', { inputPath, logoPath, position, greyscale, format });
 
+  try {
+    const outputPath = `output.${format}`;
     const filters: string[] = [];
     const overlayPosition = getOverlayPosition(position);
-    filters.push(`[0:v][1:v]overlay=${overlayPosition}:format=auto,format=yuv420p`);
     
+    filters.push(`[0:v][1:v]overlay=${overlayPosition}:format=auto,format=yuv420p`);
     if (greyscale) {
       filters.push('hue=s=0');
     }
@@ -46,19 +22,27 @@ export async function processVideo(
     const filterComplex = filters.join(',');
     console.log('Filter complex:', filterComplex);
 
-    await ffmpeg.exec([
-      '-i', 'input.mp4',
-      '-i', 'logo.png',
+    const ffmpegCommand = new Command('ffmpeg', [
+      '-i', inputPath,
+      '-i', logoPath,
       '-filter_complex', filterComplex,
       '-c:a', 'copy',
-      'output.' + format
+      outputPath
     ]);
 
-    const data = await ffmpeg.readFile('output.' + format);
-    return new Uint8Array(data);
+    const { status } = await ffmpegCommand.spawn();
+    
+    if (!status.success) {
+      throw new Error(`FFmpeg command failed with status: ${status.code}`);
+    }
+
+    const outputData = await Deno.readFile(outputPath);
+    await Deno.remove(outputPath); // Clean up the output file
+    
+    return outputData;
   } catch (error) {
     console.error('Error in video processing:', error);
-    throw new Error(`Video processing error: ${error.message}`);
+    throw new Error(`FFmpeg processing error: ${error.message}`);
   }
 }
 
