@@ -12,7 +12,6 @@ export const useVideoProcessing = () => {
   const [processedCount, setProcessedCount] = useState(0);
   const [processedUrls, setProcessedUrls] = useState<string[]>([]);
 
-  // Clear videos on page load/refresh
   useEffect(() => {
     videoState.setVideoFiles([]);
     setProcessedCount(0);
@@ -27,23 +26,40 @@ export const useVideoProcessing = () => {
       }
 
       processingStatus.setIsProcessing(true);
-      processingStatus.updateStatus('processing', 'Preparing files...', 10);
+      processingStatus.updateStatus('processing', 'Preparing files...', 10, {
+        total: videoState.videoFiles.length * 3, // 3 steps per video
+        completed: 0,
+        current: 'Initializing processing...'
+      });
 
       setProcessedCount(0);
       setProcessedUrls([]);
 
-      // Process videos sequentially
       for (const [index, { file }] of videoState.videoFiles.entries()) {
         processingStatus.updateStatus(
           'processing',
           `Processing video ${index + 1} of ${videoState.videoFiles.length}`,
-          30
+          30,
+          {
+            completed: index * 3,
+            current: `Starting video ${index + 1} processing`
+          }
         );
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           throw new Error('User not authenticated');
         }
+
+        processingStatus.updateStatus(
+          'processing',
+          `Applying effects to video ${index + 1}`,
+          50,
+          {
+            completed: index * 3 + 1,
+            current: `Applying effects to video ${index + 1}`
+          }
+        );
 
         const { finalVideoUrl, videoPublicId, logoPublicId } = await processVideo(
           file,
@@ -53,16 +69,18 @@ export const useVideoProcessing = () => {
           videoState.format
         );
 
-        // Add the new URL to processed URLs array
         const newUrls = [...processedUrls, finalVideoUrl];
         setProcessedUrls(newUrls);
         setProcessedCount(prev => prev + 1);
 
-        // Update status for each processed video
         processingStatus.updateStatus(
           index === videoState.videoFiles.length - 1 ? 'completed' : 'processing',
           finalVideoUrl,
-          Math.round((index + 1) / videoState.videoFiles.length * 100)
+          Math.round((index + 1) / videoState.videoFiles.length * 100),
+          {
+            completed: index * 3 + 2,
+            current: `Completed processing video ${index + 1}`
+          }
         );
 
         const { error: jobError } = await supabase
@@ -75,7 +93,10 @@ export const useVideoProcessing = () => {
             greyscale: videoState.greyscale,
             output_format: videoState.format,
             status: 'completed',
-            output_path: finalVideoUrl
+            output_path: finalVideoUrl,
+            total_steps: 3,
+            completed_steps: 3,
+            processing_steps: processingStatus.processingSteps
           });
 
         if (jobError) {
@@ -90,7 +111,10 @@ export const useVideoProcessing = () => {
       processingStatus.updateStatus(
         'error',
         'Error processing video',
-        0
+        0,
+        {
+          current: 'Processing failed'
+        }
       );
       toast.error('Error processing video');
     } finally {

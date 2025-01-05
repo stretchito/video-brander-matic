@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Video } from 'lucide-react';
+import { Video, CheckCircle2 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface StatusCardProps {
   title: string;
@@ -12,6 +13,7 @@ interface StatusCardProps {
   totalVideos: number;
   onViewVideos: () => void;
   showSuccessMessage: boolean;
+  processingSteps?: string[];
 }
 
 const StatusCard = ({
@@ -22,7 +24,8 @@ const StatusCard = ({
   processedCount,
   totalVideos,
   onViewVideos,
-  showSuccessMessage
+  showSuccessMessage,
+  processingSteps = []
 }: StatusCardProps) => {
   const getStatusColor = () => {
     switch (status) {
@@ -43,7 +46,6 @@ const StatusCard = ({
     if (showSuccessMessage) return 'Success!!';
     if (title === 'Status') return status;
     
-    // For Current Action, show appropriate status message
     if (currentAction.startsWith('https://')) {
       return status === 'completed' 
         ? 'Processing complete!' 
@@ -58,9 +60,21 @@ const StatusCard = ({
         <CardTitle className="text-sm">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="font-medium">
+        <p className="font-medium mb-2">
           {getDisplayText()}
         </p>
+        
+        {processingSteps.length > 0 && (
+          <ScrollArea className="h-24 rounded-md border p-2 mb-2">
+            {processingSteps.map((step, index) => (
+              <div key={index} className="flex items-center gap-2 py-1">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <span className="text-sm">{step}</span>
+              </div>
+            ))}
+          </ScrollArea>
+        )}
+
         {hasProcessedVideos && title !== 'Status' && (
           <div className="mt-2">
             <Button
