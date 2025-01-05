@@ -22,6 +22,7 @@ export const processVideo = async (options: ProcessVideoOptions) => {
   try {
     console.log('Starting video processing with FFmpeg...', options);
     
+    // Update initial status
     if (jobId) {
       await updateJobProgress(jobId, {
         status: 'processing',
@@ -40,6 +41,9 @@ export const processVideo = async (options: ProcessVideoOptions) => {
         greyscale
       );
 
+      let hasEnded = false;
+      let hasErrored = false;
+
       command
         .on('start', async (commandLine) => {
           console.log('FFmpeg command:', commandLine);
@@ -52,7 +56,7 @@ export const processVideo = async (options: ProcessVideoOptions) => {
         })
         .on('progress', async (progress) => {
           console.log('Processing progress:', progress);
-          if (jobId) {
+          if (jobId && !hasEnded && !hasErrored) {
             await updateJobProgress(jobId, {
               currentStep: `Processing: ${Math.round(progress.percent || 0)}% complete`
             });
@@ -60,6 +64,7 @@ export const processVideo = async (options: ProcessVideoOptions) => {
         })
         .on('end', async () => {
           console.log('FFmpeg processing finished');
+          hasEnded = true;
           
           try {
             const fileBuffer = await fs.promises.readFile(outputPath);
@@ -82,11 +87,18 @@ export const processVideo = async (options: ProcessVideoOptions) => {
             resolve({ outputPath: publicUrl });
           } catch (error) {
             console.error('Error in post-processing:', error);
+            if (jobId) {
+              await updateJobProgress(jobId, {
+                status: 'error',
+                errorMessage: error.message
+              });
+            }
             reject(error);
           }
         })
         .on('error', async (err) => {
           console.error('FFmpeg error:', err);
+          hasErrored = true;
           if (jobId) {
             await updateJobProgress(jobId, {
               status: 'error',

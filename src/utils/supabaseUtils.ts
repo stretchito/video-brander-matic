@@ -7,22 +7,29 @@ export const uploadProcessedVideo = async (
 ): Promise<string> => {
   console.log('Uploading processed video:', fileName);
   
-  const { error: uploadError } = await supabase.storage
-    .from('videos')
-    .upload(fileName, fileBuffer, {
-      contentType,
-      upsert: true
-    });
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('videos')
+      .upload(fileName, fileBuffer, {
+        contentType,
+        upsert: true
+      });
 
-  if (uploadError) {
-    throw uploadError;
+    if (uploadError) {
+      console.error('Error uploading processed video:', uploadError);
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('videos')
+      .getPublicUrl(fileName);
+
+    console.log('Video uploaded successfully, public URL:', publicUrl);
+    return publicUrl;
+  } catch (error) {
+    console.error('Error in uploadProcessedVideo:', error);
+    throw error;
   }
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('videos')
-    .getPublicUrl(fileName);
-
-  return publicUrl;
 };
 
 export const updateJobProgress = async (
@@ -37,11 +44,19 @@ export const updateJobProgress = async (
   }
 ) => {
   try {
+    console.log('Updating job progress:', { jobId, update });
+
     const { data: currentJob } = await supabase
       .from('processing_jobs')
-      .select('processing_steps')
+      .select('processing_steps, status')
       .eq('id', jobId)
       .single();
+
+    // Don't update if job is already completed or errored
+    if (currentJob?.status === 'completed' || currentJob?.status === 'error') {
+      console.log('Job already finished, skipping update:', currentJob.status);
+      return;
+    }
 
     const processingSteps = currentJob?.processing_steps || [];
     if (update.currentStep) {
@@ -63,8 +78,12 @@ export const updateJobProgress = async (
 
     if (error) {
       console.error('Error updating job progress:', error);
+      throw error;
     }
+
+    console.log('Job progress updated successfully');
   } catch (error) {
     console.error('Failed to update job progress:', error);
+    throw error;
   }
 };

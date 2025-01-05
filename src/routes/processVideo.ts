@@ -25,23 +25,36 @@ export const processVideoHandler = async (
   req: Request<{}, any, ProcessVideoRequest>, 
   res: Response
 ): Promise<void> => {
-  // Set a timeout for the entire request
-  const timeout = setTimeout(() => {
-    console.error('Video processing timeout reached');
-    res.status(504).json({ error: 'Processing timeout reached' });
-  }, PROCESSING_TIMEOUT);
+  let timeoutId: NodeJS.Timeout;
 
   try {
     console.log('Received video processing request:', req.body);
     const { videoUrl, options } = req.body;
     
     if (!videoUrl) {
-      clearTimeout(timeout);
       res.status(400).json({ error: 'Video URL is required' });
       return;
     }
 
-    const { data, error } = await supabase
+    // Check if there's already a processing job for this video
+    const { data: existingJob } = await supabase
+      .from('processing_jobs')
+      .select('*')
+      .eq('video_path', videoUrl)
+      .eq('status', 'processing')
+      .single();
+
+    if (existingJob) {
+      console.log('Found existing processing job:', existingJob);
+      res.status(409).json({ 
+        error: 'Video is already being processed',
+        jobId: existingJob.id
+      });
+      return;
+    }
+
+    // Create new processing job
+    const { data: newJob, error: jobError } = await supabase
       .from('processing_jobs')
       .insert({
         video_path: videoUrl,
@@ -51,12 +64,21 @@ export const processVideoHandler = async (
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating processing job:', error);
-      clearTimeout(timeout);
+    if (jobError) {
+      console.error('Error creating processing job:', jobError);
       res.status(500).json({ error: 'Failed to create processing job' });
       return;
     }
+
+    // Set up timeout handler
+    timeoutId = setTimeout(() => {
+      console.error('Video processing timeout reached');
+      updateJobProgress(newJob.id, {
+        status: 'error',
+        errorMessage: 'Processing timeout reached'
+      });
+      res.status(504).json({ error: 'Processing timeout reached' });
+    }, PROCESSING_TIMEOUT);
 
     console.log('Starting video processing with options:', options);
     const processedVideo = await processVideo({
@@ -65,22 +87,22 @@ export const processVideoHandler = async (
       position: options.position || 'top-left',
       greyscale: options.greyscale || false,
       outputFormat: options.output_format || 'mp4',
-      jobId: data.id
+      jobId: newJob.id
     }) as ProcessedVideoResult;
 
     console.log('Video processing completed:', processedVideo);
 
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
     res.json({ 
       message: 'Video processing completed',
-      jobId: data.id,
-      outputUrl: processedVideo.outputPath // This will now be a public URL
+      jobId: newJob.id,
+      outputUrl: processedVideo.outputPath
     });
     return;
 
   } catch (error) {
     console.error('Server error:', error);
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
     res.status(500).json({ 
       error: 'Internal server error',
       details: error.message
