@@ -27,7 +27,7 @@ interface ProcessVideoRequest {
 }
 
 // Video processing endpoint
-app.post('/process-video', async (req: Request<{}, {}, ProcessVideoRequest>, res: Response) => {
+app.post<{}, any, ProcessVideoRequest>('/process-video', async (req, res) => {
   try {
     const { videoUrl, options } = req.body;
     
@@ -63,7 +63,7 @@ app.post('/process-video', async (req: Request<{}, {}, ProcessVideoRequest>, res
 });
 
 // Job status endpoint
-app.get('/job-status/:jobId', async (req: Request<{ jobId: string }>, res: Response) => {
+app.get<{ jobId: string }>('/job-status/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
 
