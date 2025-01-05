@@ -59,72 +59,88 @@ export const useVideoProcessing = () => {
           logoUrl: logoData.signedUrl
         });
 
-        // Send processing request to our server
-        const response = await fetch(`${SERVER_URL}/process-video`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            videoUrl: videoData.signedUrl,
-            logoUrl: logoData.signedUrl,
-            position: videoState.position,
-            greyscale: videoState.greyscale,
-            format: videoState.format
-          })
-        });
+        // Send processing request to our server with a timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Processing failed:', errorText);
-          throw new Error(`Processing failed: ${errorText}`);
-        }
+        try {
+          const response = await fetch(`${SERVER_URL}/process-video`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              videoUrl: videoData.signedUrl,
+              logoUrl: logoData.signedUrl,
+              position: videoState.position,
+              greyscale: videoState.greyscale,
+              format: videoState.format
+            }),
+            signal: controller.signal
+          });
 
-        const data = await response.json();
-        console.log('Processing response:', data);
+          clearTimeout(timeoutId);
 
-        if (!data.jobId) {
-          throw new Error('No job ID received from server');
-        }
-
-        // Start polling for job status
-        let jobCompleted = false;
-        let retryCount = 0;
-        const maxRetries = 30; // 1 minute of retries (2-second intervals)
-
-        while (!jobCompleted && retryCount < maxRetries) {
-          console.log(`Polling job status (attempt ${retryCount + 1})`);
-          
-          const statusResponse = await fetch(`${SERVER_URL}/job-status/${data.jobId}`);
-          if (!statusResponse.ok) {
-            console.error('Status check failed:', await statusResponse.text());
-            throw new Error('Failed to check job status');
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Processing failed:', errorText);
+            throw new Error(`Processing failed: ${errorText}`);
           }
 
-          const statusData = await statusResponse.json();
-          console.log('Job status:', statusData);
-          
-          if (statusData.status === 'completed') {
-            jobCompleted = true;
-            const newUrls = [...processedUrls, statusData.outputUrl];
-            setProcessedUrls(newUrls);
-            setProcessedCount(prev => prev + 1);
-            processingSteps.updateSteps(
-              videoState.videoFiles.length * 3,
-              index * 3 + 3,
-              `Completed processing video ${index + 1}`
-            );
-          } else if (statusData.status === 'error') {
-            throw new Error(statusData.error || 'Processing failed');
-          } else {
-            // Wait before next poll
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            retryCount++;
-          }
-        }
+          const data = await response.json();
+          console.log('Processing response:', data);
 
-        if (!jobCompleted) {
-          throw new Error('Processing timed out');
+          if (!data.jobId) {
+            throw new Error('No job ID received from server');
+          }
+
+          // Start polling for job status
+          let jobCompleted = false;
+          let retryCount = 0;
+          const maxRetries = 60; // 2 minutes of retries (2-second intervals)
+
+          while (!jobCompleted && retryCount < maxRetries) {
+            console.log(`Polling job status (attempt ${retryCount + 1})`);
+            
+            const statusResponse = await fetch(`${SERVER_URL}/job-status/${data.jobId}`);
+            if (!statusResponse.ok) {
+              console.error('Status check failed:', await statusResponse.text());
+              throw new Error('Failed to check job status');
+            }
+
+            const statusData = await statusResponse.json();
+            console.log('Job status:', statusData);
+            
+            if (statusData.status === 'completed') {
+              jobCompleted = true;
+              const newUrls = [...processedUrls, statusData.outputUrl];
+              setProcessedUrls(newUrls);
+              setProcessedCount(prev => prev + 1);
+              processingSteps.updateSteps(
+                videoState.videoFiles.length * 3,
+                index * 3 + 3,
+                `Completed processing video ${index + 1}`
+              );
+            } else if (statusData.status === 'error') {
+              throw new Error(statusData.error || 'Processing failed');
+            } else {
+              // Wait before next poll
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              retryCount++;
+            }
+          }
+
+          if (!jobCompleted) {
+            throw new Error('Processing timed out while waiting for completion');
+          }
+
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            throw new Error('Video processing timed out. Please try again with a shorter video.');
+          }
+          throw error;
+        } finally {
+          clearTimeout(timeoutId);
         }
 
         processingStatus.updateStatus(
