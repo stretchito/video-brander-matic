@@ -27,12 +27,13 @@ interface ProcessVideoRequest {
 }
 
 // Video processing endpoint
-app.post<{}, any, ProcessVideoRequest>('/process-video', async (req, res) => {
+app.post('/process-video', async (req: Request<{}, any, ProcessVideoRequest>, res: Response): Promise<void> => {
   try {
     const { videoUrl, options } = req.body;
     
     if (!videoUrl) {
-      return res.status(400).json({ error: 'Video URL is required' });
+      res.status(400).json({ error: 'Video URL is required' });
+      return;
     }
 
     // Add to processing queue
@@ -48,7 +49,8 @@ app.post<{}, any, ProcessVideoRequest>('/process-video', async (req, res) => {
 
     if (error) {
       console.error('Error creating processing job:', error);
-      return res.status(500).json({ error: 'Failed to create processing job' });
+      res.status(500).json({ error: 'Failed to create processing job' });
+      return;
     }
 
     res.json({ 
@@ -63,7 +65,7 @@ app.post<{}, any, ProcessVideoRequest>('/process-video', async (req, res) => {
 });
 
 // Job status endpoint
-app.get<{ jobId: string }>('/job-status/:jobId', async (req, res) => {
+app.get('/job-status/:jobId', async (req: Request<{ jobId: string }>, res: Response): Promise<void> => {
   try {
     const { jobId } = req.params;
 
@@ -75,11 +77,13 @@ app.get<{ jobId: string }>('/job-status/:jobId', async (req, res) => {
 
     if (error) {
       console.error('Error fetching job status:', error);
-      return res.status(500).json({ error: 'Failed to fetch job status' });
+      res.status(500).json({ error: 'Failed to fetch job status' });
+      return;
     }
 
     if (!data) {
-      return res.status(404).json({ error: 'Job not found' });
+      res.status(404).json({ error: 'Job not found' });
+      return;
     }
 
     res.json(data);
