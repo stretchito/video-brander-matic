@@ -1,12 +1,79 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.7';
 import { toBlobURL } from 'https://esm.sh/@ffmpeg/util@0.12.1';
-import { downloadFile, uploadFile } from './storage.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
-export const corsHeaders = {
+const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+async function downloadFile(supabase: any, bucketName: string, filePath: string): Promise<Uint8Array> {
+  console.log(`Attempting to download file from bucket: ${bucketName}, path: ${filePath}`);
+  
+  if (!filePath) {
+    throw new Error('File path is required');
+  }
+
+  try {
+    const { data, error } = await supabase
+      .storage
+      .from(bucketName)
+      .download(filePath);
+
+    if (error) {
+      console.error('Error downloading file:', error);
+      throw new Error(`Error downloading file: ${error.message}`);
+    }
+
+    if (!data) {
+      console.error('No data received from storage');
+      throw new Error('No data received from storage');
+    }
+
+    console.log(`Successfully downloaded file: ${filePath}`);
+    return new Uint8Array(await data.arrayBuffer());
+  } catch (error) {
+    console.error('Error in downloadFile:', error);
+    throw error;
+  }
+}
+
+async function uploadFile(supabase: any, bucketName: string, filePath: string, file: Blob): Promise<string> {
+  console.log(`Attempting to upload file to bucket: ${bucketName}, path: ${filePath}`);
+  
+  if (!filePath) {
+    throw new Error('File path is required');
+  }
+
+  try {
+    const { error: uploadError } = await supabase
+      .storage
+      .from(bucketName)
+      .upload(filePath, file, {
+        contentType: 'video/mp4',
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.error('Error uploading file:', uploadError);
+      throw new Error(`Error uploading file: ${uploadError.message}`);
+    }
+
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from(bucketName)
+      .getPublicUrl(filePath);
+
+    console.log(`Successfully uploaded file: ${filePath}`);
+    console.log(`Public URL: ${publicUrl}`);
+    
+    return publicUrl;
+  } catch (error) {
+    console.error('Error in uploadFile:', error);
+    throw error;
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -44,13 +111,18 @@ serve(async (req) => {
       outputFormat
     });
 
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Download files from storage
     console.log('Downloading video file...');
-    const videoData = await downloadFile('videos', videoPath);
+    const videoData = await downloadFile(supabase, 'videos', videoPath);
     console.log('Video file downloaded successfully');
 
     console.log('Downloading logo file...');
-    const logoData = await downloadFile('logos', logoPath);
+    const logoData = await downloadFile(supabase, 'logos', logoPath);
     console.log('Logo file downloaded successfully');
 
     // Initialize FFmpeg
@@ -109,7 +181,7 @@ serve(async (req) => {
     // Upload processed video
     const outputPath = `processed/${Date.now()}_output.${outputFormat}`;
     console.log('Uploading processed video...');
-    const finalVideoUrl = await uploadFile('videos', outputPath, processedVideo);
+    const finalVideoUrl = await uploadFile(supabase, 'videos', outputPath, processedVideo);
     console.log('Upload completed. Final URL:', finalVideoUrl);
 
     return new Response(
