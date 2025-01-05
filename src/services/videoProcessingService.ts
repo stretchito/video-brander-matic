@@ -26,21 +26,6 @@ export const processVideo = async (options: ProcessVideoOptions) => {
     return new Promise((resolve, reject) => {
       let command = ffmpeg(videoPath)
         .input(logoPath)
-        .complexFilter([
-          {
-            filter: 'overlay',
-            options: getOverlayPosition(position),
-            inputs: ['0:v', '1:v'],
-            outputs: ['v']
-          },
-          ...(greyscale ? [{
-            filter: 'hue',
-            options: { s: 0 },
-            inputs: ['v'],
-            outputs: ['out']
-          }] : [])
-        ])
-        .outputOptions('-c:a copy')
         .on('start', (commandLine) => {
           console.log('FFmpeg command:', commandLine);
         })
@@ -54,7 +39,35 @@ export const processVideo = async (options: ProcessVideoOptions) => {
         .on('error', (err) => {
           console.error('FFmpeg error:', err);
           reject(err);
-        })
+        });
+
+      // Add filters based on options
+      const filters = [];
+      
+      // Add overlay filter
+      filters.push({
+        filter: 'overlay',
+        options: getOverlayPosition(position),
+        inputs: ['0:v', '1:v'],
+        outputs: ['v']
+      });
+
+      // Add greyscale if enabled
+      if (greyscale) {
+        filters.push({
+          filter: 'hue',
+          options: { s: 0 },
+          inputs: ['v'],
+          outputs: ['out']
+        });
+      }
+
+      // Apply filters
+      command = command.complexFilter(filters);
+
+      // Set output options and save
+      command
+        .outputOptions('-c:a copy')
         .save(outputPath);
     });
   } catch (error) {
