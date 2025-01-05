@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useVideoState } from './useVideoState';
 import { useProcessingStatus } from './useProcessingStatus';
 import { useProcessingSteps } from './useProcessingSteps';
+import { SERVER_URL } from '@/config/server';
 
 export const useVideoProcessing = () => {
   const videoState = useVideoState();
@@ -40,33 +41,64 @@ export const useVideoProcessing = () => {
           `Starting video ${index + 1} processing`
         );
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          throw new Error('User not authenticated');
+        // Get the video and logo URLs from Supabase storage
+        const { data: videoData } = await supabase.storage
+          .from('videos')
+          .createSignedUrl(path, 3600); // 1 hour expiry
+
+        const { data: logoData } = await supabase.storage
+          .from('logos')
+          .createSignedUrl(videoState.logoPath, 3600);
+
+        if (!videoData?.signedUrl || !logoData?.signedUrl) {
+          throw new Error('Failed to get signed URLs for video or logo');
         }
 
-        const { data, error } = await supabase.functions.invoke('process-video', {
-          body: {
-            videoPath: path,
-            logoPath: videoState.logoPath,
+        // Send processing request to our server
+        const response = await fetch(`${SERVER_URL}/process-video`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            videoUrl: videoData.signedUrl,
+            logoUrl: logoData.signedUrl,
             position: videoState.position,
             greyscale: videoState.greyscale,
             format: videoState.format
-          }
+          })
         });
 
-        if (error) {
-          console.error('Processing error:', error);
-          throw error;
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Processing failed: ${error}`);
         }
 
-        const newUrls = [...processedUrls, data.finalVideoUrl];
-        setProcessedUrls(newUrls);
-        setProcessedCount(prev => prev + 1);
+        const data = await response.json();
+        console.log('Processing response:', data);
+
+        // Start polling for job status
+        let jobCompleted = false;
+        while (!jobCompleted) {
+          const statusResponse = await fetch(`${SERVER_URL}/job-status/${data.jobId}`);
+          const statusData = await statusResponse.json();
+          
+          if (statusData.status === 'completed') {
+            jobCompleted = true;
+            const newUrls = [...processedUrls, statusData.outputUrl];
+            setProcessedUrls(newUrls);
+            setProcessedCount(prev => prev + 1);
+          } else if (statusData.status === 'error') {
+            throw new Error(statusData.error || 'Processing failed');
+          }
+          
+          // Wait before next poll
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
 
         processingStatus.updateStatus(
           index === videoState.videoFiles.length - 1 ? 'completed' : 'processing',
-          data.finalVideoUrl,
+          data.outputUrl,
           Math.round((index + 1) / videoState.videoFiles.length * 100)
         );
         processingSteps.updateSteps(
