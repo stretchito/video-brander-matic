@@ -44,7 +44,7 @@ export const useVideoProcessing = () => {
         // Get the video and logo URLs from Supabase storage
         const { data: videoData } = await supabase.storage
           .from('videos')
-          .createSignedUrl(path, 3600); // 1 hour expiry
+          .createSignedUrl(path, 3600);
 
         const { data: logoData } = await supabase.storage
           .from('logos')
@@ -53,6 +53,11 @@ export const useVideoProcessing = () => {
         if (!videoData?.signedUrl || !logoData?.signedUrl) {
           throw new Error('Failed to get signed URLs for video or logo');
         }
+
+        console.log('Sending processing request with URLs:', {
+          videoUrl: videoData.signedUrl,
+          logoUrl: logoData.signedUrl
+        });
 
         // Send processing request to our server
         const response = await fetch(`${SERVER_URL}/process-video`, {
@@ -70,41 +75,62 @@ export const useVideoProcessing = () => {
         });
 
         if (!response.ok) {
-          const error = await response.text();
-          throw new Error(`Processing failed: ${error}`);
+          const errorText = await response.text();
+          console.error('Processing failed:', errorText);
+          throw new Error(`Processing failed: ${errorText}`);
         }
 
         const data = await response.json();
         console.log('Processing response:', data);
 
+        if (!data.jobId) {
+          throw new Error('No job ID received from server');
+        }
+
         // Start polling for job status
         let jobCompleted = false;
-        while (!jobCompleted) {
+        let retryCount = 0;
+        const maxRetries = 30; // 1 minute of retries (2-second intervals)
+
+        while (!jobCompleted && retryCount < maxRetries) {
+          console.log(`Polling job status (attempt ${retryCount + 1})`);
+          
           const statusResponse = await fetch(`${SERVER_URL}/job-status/${data.jobId}`);
+          if (!statusResponse.ok) {
+            console.error('Status check failed:', await statusResponse.text());
+            throw new Error('Failed to check job status');
+          }
+
           const statusData = await statusResponse.json();
+          console.log('Job status:', statusData);
           
           if (statusData.status === 'completed') {
             jobCompleted = true;
             const newUrls = [...processedUrls, statusData.outputUrl];
             setProcessedUrls(newUrls);
             setProcessedCount(prev => prev + 1);
+            processingSteps.updateSteps(
+              videoState.videoFiles.length * 3,
+              index * 3 + 3,
+              `Completed processing video ${index + 1}`
+            );
           } else if (statusData.status === 'error') {
             throw new Error(statusData.error || 'Processing failed');
+          } else {
+            // Wait before next poll
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            retryCount++;
           }
-          
-          // Wait before next poll
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        if (!jobCompleted) {
+          throw new Error('Processing timed out');
         }
 
         processingStatus.updateStatus(
           index === videoState.videoFiles.length - 1 ? 'completed' : 'processing',
-          data.outputUrl,
-          Math.round((index + 1) / videoState.videoFiles.length * 100)
-        );
-        processingSteps.updateSteps(
-          videoState.videoFiles.length * 3,
-          index * 3 + 2,
-          `Completed processing video ${index + 1}`
+          `Processed ${processedCount + 1} of ${videoState.videoFiles.length} videos`,
+          Math.round(((index + 1) / videoState.videoFiles.length) * 100)
         );
       }
 
@@ -112,13 +138,13 @@ export const useVideoProcessing = () => {
 
     } catch (error) {
       console.error('Processing error:', error);
-      processingStatus.updateStatus('error', 'Error processing video', 0);
+      processingStatus.updateStatus('error', error.message || 'Error processing video', 0);
       processingSteps.updateSteps(
         processingSteps.totalSteps,
         processingSteps.completedSteps,
         'Processing failed'
       );
-      toast.error('Error processing video');
+      toast.error(error.message || 'Error processing video');
     } finally {
       processingStatus.setIsProcessing(false);
     }
