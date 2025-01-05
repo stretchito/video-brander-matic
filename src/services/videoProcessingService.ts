@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { supabase } from '../lib/supabase';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,31 +14,66 @@ interface ProcessVideoOptions {
   position: string;
   greyscale: boolean;
   outputFormat: string;
+  jobId?: string;
 }
 
 export const processVideo = async (options: ProcessVideoOptions) => {
-  const { videoPath, logoPath, position, greyscale, outputFormat } = options;
+  const { videoPath, logoPath, position, greyscale, outputFormat, jobId } = options;
   
   try {
     console.log('Starting video processing with FFmpeg...', options);
     
     const outputPath = path.join(__dirname, '../uploads', `output_${Date.now()}.${outputFormat}`);
     
+    // Update job with initial progress
+    if (jobId) {
+      await updateJobProgress(jobId, {
+        status: 'processing',
+        totalSteps: 3,
+        completedSteps: 0,
+        currentStep: 'Initializing video processing'
+      });
+    }
+
     return new Promise((resolve, reject) => {
       let command = ffmpeg(videoPath)
         .input(logoPath)
-        .on('start', (commandLine) => {
+        .on('start', async (commandLine) => {
           console.log('FFmpeg command:', commandLine);
+          if (jobId) {
+            await updateJobProgress(jobId, {
+              completedSteps: 1,
+              currentStep: 'Starting FFmpeg processing'
+            });
+          }
         })
-        .on('progress', (progress) => {
+        .on('progress', async (progress) => {
           console.log('Processing progress:', progress);
+          if (jobId) {
+            await updateJobProgress(jobId, {
+              currentStep: `Processing: ${Math.round(progress.percent || 0)}% complete`
+            });
+          }
         })
-        .on('end', () => {
+        .on('end', async () => {
           console.log('Processing finished');
+          if (jobId) {
+            await updateJobProgress(jobId, {
+              completedSteps: 3,
+              currentStep: 'Processing completed',
+              status: 'completed'
+            });
+          }
           resolve({ outputPath });
         })
-        .on('error', (err) => {
+        .on('error', async (err) => {
           console.error('FFmpeg error:', err);
+          if (jobId) {
+            await updateJobProgress(jobId, {
+              status: 'error',
+              errorMessage: err.message
+            });
+          }
           reject(err);
         });
 
@@ -72,9 +108,45 @@ export const processVideo = async (options: ProcessVideoOptions) => {
     });
   } catch (error) {
     console.error('Error in video processing service:', error);
+    if (jobId) {
+      await updateJobProgress(jobId, {
+        status: 'error',
+        errorMessage: error.message
+      });
+    }
     throw error;
   }
 };
+
+async function updateJobProgress(jobId: string, update: {
+  status?: string;
+  completedSteps?: number;
+  totalSteps?: number;
+  currentStep?: string;
+  errorMessage?: string;
+}) {
+  try {
+    const { error } = await supabase
+      .from('processing_jobs')
+      .update({
+        status: update.status,
+        completed_steps: update.completedSteps,
+        total_steps: update.totalSteps,
+        processing_steps: update.currentStep 
+          ? supabase.sql`array_append(processing_steps, ${update.currentStep})`
+          : undefined,
+        error_message: update.errorMessage,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', jobId);
+
+    if (error) {
+      console.error('Error updating job progress:', error);
+    }
+  } catch (error) {
+    console.error('Failed to update job progress:', error);
+  }
+}
 
 function getOverlayPosition(position: string): string {
   switch (position) {

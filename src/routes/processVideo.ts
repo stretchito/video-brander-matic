@@ -64,25 +64,11 @@ export const processVideoHandler = async (
       logoPath: options.logo_path || '',
       position: options.position || 'top-left',
       greyscale: options.greyscale || false,
-      outputFormat: options.output_format || 'mp4'
+      outputFormat: options.output_format || 'mp4',
+      jobId: data.id
     }) as ProcessedVideoResult;
 
     console.log('Video processing completed:', processedVideo);
-
-    const { error: updateError } = await supabase
-      .from('processing_jobs')
-      .update({
-        status: 'completed',
-        output_path: processedVideo.outputPath
-      })
-      .eq('id', data.id);
-
-    if (updateError) {
-      console.error('Error updating job:', updateError);
-      clearTimeout(timeout);
-      res.status(500).json({ error: 'Failed to update job status' });
-      return;
-    }
 
     clearTimeout(timeout);
     res.json({ 
