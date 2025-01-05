@@ -12,10 +12,38 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Configure ffmpeg path for production
-if (process.env.FFMPEG_PATH) {
-  ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
-}
+// Configure ffmpeg path
+const configureFfmpeg = () => {
+  try {
+    // For production environment
+    if (process.env.FFMPEG_PATH) {
+      console.log('Using production FFmpeg path:', process.env.FFMPEG_PATH);
+      ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
+    } else {
+      // For development environment, attempt to find ffmpeg in PATH
+      const ffmpegPath = process.env.NODE_ENV === 'production' 
+        ? '/usr/bin/ffmpeg'  // Default production path
+        : 'ffmpeg';          // Use PATH in development
+      
+      console.log('Configuring FFmpeg with path:', ffmpegPath);
+      ffmpeg.setFfmpegPath(ffmpegPath);
+    }
+
+    // Verify FFmpeg is working
+    ffmpeg.getAvailableFormats((err, formats) => {
+      if (err) {
+        console.error('Error checking FFmpeg:', err);
+      } else {
+        console.log('FFmpeg is properly configured. Available formats:', Object.keys(formats).length);
+      }
+    });
+  } catch (error) {
+    console.error('Error configuring FFmpeg:', error);
+  }
+};
+
+// Configure FFmpeg before starting the server
+configureFfmpeg();
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -44,9 +72,18 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  // Log the FFmpeg path using the public API
-  const ffmpegPath = process.env.FFMPEG_PATH || 'Not set';
+  // Log FFmpeg configuration
+  const ffmpegPath = ffmpeg.path || 'Using PATH';
   console.log('FFmpeg path:', ffmpegPath);
+  
+  // Test FFmpeg version
+  ffmpeg.getAvailableCodecs((err, codecs) => {
+    if (err) {
+      console.error('Error getting FFmpeg codecs:', err);
+    } else {
+      console.log('FFmpeg codecs available:', Object.keys(codecs).length);
+    }
+  });
 });
 
 export default app;

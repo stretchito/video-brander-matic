@@ -24,9 +24,35 @@ export const createFFmpegCommand = (
 ): ffmpeg.FfmpegCommand => {
   console.log('Creating FFmpeg command with paths:', { inputPath, logoPath, outputPath });
   
+  // Verify input files exist
+  console.log('Verifying input files...');
+  
+  const command = ffmpeg(inputPath)
+    .input(logoPath)
+    .on('start', (commandLine) => {
+      console.log('FFmpeg command:', commandLine);
+    })
+    .on('progress', (progress) => {
+      console.log('Processing:', {
+        frames: progress.frames,
+        currentFps: progress.currentFps,
+        currentKbps: progress.currentKbps,
+        targetSize: progress.targetSize,
+        timemark: progress.timemark,
+        percent: progress.percent
+      });
+    })
+    .on('stderr', (stderrLine) => {
+      console.log('FFmpeg stderr:', stderrLine);
+    })
+    .on('error', (err) => {
+      console.error('FFmpeg processing error:', err);
+    });
+
   const filters = [];
   const overlayPosition = getOverlayPosition(position);
   
+  // Add overlay filter
   filters.push({
     filter: 'overlay',
     options: overlayPosition,
@@ -34,6 +60,7 @@ export const createFFmpegCommand = (
     outputs: ['v']
   });
 
+  // Add greyscale filter if enabled
   if (greyscale) {
     filters.push({
       filter: 'hue',
@@ -43,8 +70,15 @@ export const createFFmpegCommand = (
     });
   }
 
-  return ffmpeg(inputPath)
-    .input(logoPath)
-    .complexFilter(filters)
-    .outputOptions('-c:a copy');
+  // Apply filters
+  command.complexFilter(filters);
+
+  // Set output options
+  command
+    .outputOptions('-c:a copy')
+    .outputOptions('-movflags +faststart') // Enable streaming
+    .outputOptions('-preset ultrafast')    // Faster encoding
+    .outputOptions('-y');                  // Overwrite output file
+
+  return command;
 };
