@@ -12,6 +12,10 @@ interface ProcessVideoRequest {
   }
 }
 
+interface ProcessedVideoResult {
+  outputPath: string;
+}
+
 const PROCESSING_TIMEOUT = 300000; // 5 minutes timeout
 
 export const processVideoHandler = async (
@@ -57,7 +61,7 @@ export const processVideoHandler = async (
       greyscale: options.greyscale || false,
       outputFormat: options.output_format || 'mp4',
       jobId: newJob.id
-    });
+    }) as ProcessedVideoResult;
 
     console.log('Video processing completed:', processedVideo);
 
