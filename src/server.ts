@@ -73,7 +73,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   // Log FFmpeg configuration
-  const ffmpegPath = ffmpeg.path || 'Using PATH';
+  const ffmpegPath = process.env.FFMPEG_PATH || 'Using system PATH';
   console.log('FFmpeg path:', ffmpegPath);
   
   // Test FFmpeg version
