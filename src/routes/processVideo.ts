@@ -74,7 +74,7 @@ export const processVideoHandler = async (
     res.json({ 
       message: 'Video processing completed',
       jobId: data.id,
-      outputUrl: processedVideo.outputPath
+      outputUrl: processedVideo.outputPath // This will now be a public URL
     });
     return;
 

@@ -23,7 +23,9 @@ export const processVideo = async (options: ProcessVideoOptions) => {
   try {
     console.log('Starting video processing with FFmpeg...', options);
     
-    const outputPath = path.join(__dirname, '../uploads', `output_${Date.now()}.${outputFormat}`);
+    // Generate a unique output filename in the processed/ folder
+    const outputFileName = `processed/output_${Date.now()}.${outputFormat}`;
+    const outputPath = path.join(__dirname, '../uploads', outputFileName);
     
     // Update job with initial progress
     if (jobId) {
@@ -57,14 +59,43 @@ export const processVideo = async (options: ProcessVideoOptions) => {
         })
         .on('end', async () => {
           console.log('Processing finished');
-          if (jobId) {
-            await updateJobProgress(jobId, {
-              completedSteps: 3,
-              currentStep: 'Processing completed',
-              status: 'completed'
-            });
+          
+          try {
+            // Upload the processed file to Supabase storage
+            const fileBuffer = await fs.promises.readFile(outputPath);
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('videos')
+              .upload(outputFileName, fileBuffer, {
+                contentType: `video/${outputFormat}`,
+                upsert: true
+              });
+
+            if (uploadError) {
+              throw uploadError;
+            }
+
+            // Get the public URL for the uploaded file
+            const { data: { publicUrl } } = supabase.storage
+              .from('videos')
+              .getPublicUrl(outputFileName);
+
+            if (jobId) {
+              await updateJobProgress(jobId, {
+                completedSteps: 3,
+                currentStep: 'Processing completed',
+                status: 'completed',
+                outputPath: publicUrl
+              });
+            }
+
+            // Clean up the local file
+            await fs.promises.unlink(outputPath);
+            
+            resolve({ outputPath: publicUrl });
+          } catch (error) {
+            console.error('Error uploading processed video:', error);
+            reject(error);
           }
-          resolve({ outputPath });
         })
         .on('error', async (err) => {
           console.error('FFmpeg error:', err);
@@ -124,6 +155,7 @@ async function updateJobProgress(jobId: string, update: {
   totalSteps?: number;
   currentStep?: string;
   errorMessage?: string;
+  outputPath?: string;
 }) {
   try {
     // Get current processing steps
@@ -147,6 +179,7 @@ async function updateJobProgress(jobId: string, update: {
         total_steps: update.totalSteps,
         processing_steps: processingSteps,
         error_message: update.errorMessage,
+        output_path: update.outputPath,
         updated_at: new Date().toISOString()
       })
       .eq('id', jobId);
