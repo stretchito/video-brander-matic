@@ -15,19 +15,13 @@ const __dirname = dirname(__filename);
 // Configure ffmpeg path
 const configureFfmpeg = () => {
   try {
-    // For production environment
-    if (process.env.FFMPEG_PATH) {
-      console.log('Using production FFmpeg path:', process.env.FFMPEG_PATH);
-      ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
-    } else {
-      // For development environment, attempt to find ffmpeg in PATH
-      const ffmpegPath = process.env.NODE_ENV === 'production' 
-        ? '/usr/bin/ffmpeg'  // Default production path
-        : 'ffmpeg';          // Use PATH in development
-      
-      console.log('Configuring FFmpeg with path:', ffmpegPath);
-      ffmpeg.setFfmpegPath(ffmpegPath);
-    }
+    // For production environment (Render.com uses this path)
+    const ffmpegPath = process.env.NODE_ENV === 'production' 
+      ? '/usr/bin/ffmpeg'  // Default Linux FFmpeg path
+      : 'ffmpeg';          // Use system PATH in development
+    
+    console.log('Configuring FFmpeg with path:', ffmpegPath);
+    ffmpeg.setFfmpegPath(ffmpegPath);
 
     // Verify FFmpeg is working
     ffmpeg.getAvailableFormats((err, formats) => {
@@ -39,6 +33,7 @@ const configureFfmpeg = () => {
     });
   } catch (error) {
     console.error('Error configuring FFmpeg:', error);
+    throw error; // Throw error to fail fast if FFmpeg is not properly configured
   }
 };
 
@@ -72,9 +67,8 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  // Log FFmpeg configuration
-  const ffmpegPath = process.env.FFMPEG_PATH || 'Using system PATH';
-  console.log('FFmpeg path:', ffmpegPath);
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('FFmpeg path:', ffmpeg.path || 'Using system PATH');
   
   // Test FFmpeg version
   ffmpeg.getAvailableCodecs((err, codecs) => {
