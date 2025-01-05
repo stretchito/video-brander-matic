@@ -11,75 +11,78 @@ export type Database = {
     Tables: {
       processing_jobs: {
         Row: {
+          attempt_count: number | null
           captions_enabled: boolean | null
+          completed_at: string | null
           completed_steps: number | null
           created_at: string
           error_message: string | null
           greyscale: boolean
           id: string
-          logo_hash: string | null
+          last_error: string | null
           logo_path: string
           output_format: string
           output_path: string | null
           position: string
           processing_steps: Json | null
+          started_at: string | null
           status: string
           total_steps: number | null
           transcription_enabled: boolean | null
-          transcription_status: string | null
           transcription_summary: string | null
           transcription_url: string | null
           updated_at: string
           user_id: string
-          video_hash: string | null
           video_path: string
         }
         Insert: {
+          attempt_count?: number | null
           captions_enabled?: boolean | null
+          completed_at?: string | null
           completed_steps?: number | null
           created_at?: string
           error_message?: string | null
           greyscale?: boolean
           id?: string
-          logo_hash?: string | null
+          last_error?: string | null
           logo_path: string
           output_format: string
           output_path?: string | null
           position: string
           processing_steps?: Json | null
+          started_at?: string | null
           status?: string
           total_steps?: number | null
           transcription_enabled?: boolean | null
-          transcription_status?: string | null
           transcription_summary?: string | null
           transcription_url?: string | null
           updated_at?: string
           user_id: string
-          video_hash?: string | null
           video_path: string
         }
         Update: {
+          attempt_count?: number | null
           captions_enabled?: boolean | null
+          completed_at?: string | null
           completed_steps?: number | null
           created_at?: string
           error_message?: string | null
           greyscale?: boolean
           id?: string
-          logo_hash?: string | null
+          last_error?: string | null
           logo_path?: string
           output_format?: string
           output_path?: string | null
           position?: string
           processing_steps?: Json | null
+          started_at?: string | null
           status?: string
           total_steps?: number | null
           transcription_enabled?: boolean | null
-          transcription_status?: string | null
           transcription_summary?: string | null
           transcription_url?: string | null
           updated_at?: string
           user_id?: string
-          video_hash?: string | null
           video_path?: string
         }
         Relationships: []
@@ -143,7 +146,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_stalled_jobs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

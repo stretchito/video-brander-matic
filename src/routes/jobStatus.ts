@@ -22,6 +22,26 @@ export const getJobStatus = async (req: Request<{ jobId: string }>, res: Respons
       return;
     }
 
+    // If the job has been processing for too long, mark it as failed
+    if (data.status === 'processing' && data.started_at) {
+      const startedAt = new Date(data.started_at);
+      const now = new Date();
+      const processingTime = now.getTime() - startedAt.getTime();
+      
+      if (processingTime > 300000) { // 5 minutes
+        await supabase
+          .from('processing_jobs')
+          .update({
+            status: 'error',
+            last_error: 'Processing timeout reached'
+          })
+          .eq('id', jobId);
+          
+        res.status(408).json({ error: 'Processing timeout reached' });
+        return;
+      }
+    }
+
     res.json(data);
     return;
 

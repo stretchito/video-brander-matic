@@ -1,8 +1,9 @@
 import path from 'path';
 import fs from 'fs';
-import { ensureUploadsDirectory, cleanupFile } from '../utils/fileUtils';
+import { ensureUploadsDirectory } from '../utils/fileUtils';
 import { createFFmpegCommand } from '../utils/ffmpegUtils';
-import { uploadProcessedVideo, updateJobProgress } from '../utils/supabaseUtils';
+import { uploadProcessedVideo } from '../utils/supabaseUtils';
+import { supabase } from '../lib/supabase';
 
 interface ProcessVideoOptions {
   videoPath: string;
@@ -10,7 +11,7 @@ interface ProcessVideoOptions {
   position: string;
   greyscale: boolean;
   outputFormat: string;
-  jobId?: string;
+  jobId: string;
 }
 
 export const processVideo = async (options: ProcessVideoOptions) => {
@@ -19,104 +20,80 @@ export const processVideo = async (options: ProcessVideoOptions) => {
   const outputFileName = `processed/output_${Date.now()}.${outputFormat}`;
   const outputPath = path.join(uploadsDir, outputFileName);
   
+  console.log('Starting video processing:', { jobId, videoPath });
+  
   try {
-    console.log('Starting video processing with FFmpeg...', options);
-    
-    // Update initial status
-    if (jobId) {
-      await updateJobProgress(jobId, {
+    // Update job status to processing
+    await supabase
+      .from('processing_jobs')
+      .update({
         status: 'processing',
-        totalSteps: 3,
-        completedSteps: 0,
-        currentStep: 'Initializing video processing'
-      });
-    }
+        started_at: new Date().toISOString(),
+        attempt_count: 1
+      })
+      .eq('id', jobId);
 
     return new Promise((resolve, reject) => {
-      const command = createFFmpegCommand(
-        videoPath,
-        logoPath,
-        outputPath,
-        position,
-        greyscale
-      );
-
-      let hasEnded = false;
-      let hasErrored = false;
+      const command = createFFmpegCommand(videoPath, logoPath, outputPath, position, greyscale);
 
       command
-        .on('start', async (commandLine) => {
+        .on('start', (commandLine) => {
           console.log('FFmpeg command:', commandLine);
-          if (jobId) {
-            await updateJobProgress(jobId, {
-              completedSteps: 1,
-              currentStep: 'Starting FFmpeg processing'
-            });
-          }
         })
-        .on('progress', async (progress) => {
+        .on('progress', (progress) => {
           console.log('Processing progress:', progress);
-          if (jobId && !hasEnded && !hasErrored) {
-            await updateJobProgress(jobId, {
-              currentStep: `Processing: ${Math.round(progress.percent || 0)}% complete`
-            });
-          }
         })
         .on('end', async () => {
           console.log('FFmpeg processing finished');
-          hasEnded = true;
-          
           try {
             const fileBuffer = await fs.promises.readFile(outputPath);
-            const publicUrl = await uploadProcessedVideo(
-              fileBuffer,
-              outputFileName,
-              `video/${outputFormat}`
-            );
+            const publicUrl = await uploadProcessedVideo(fileBuffer, outputFileName, `video/${outputFormat}`);
 
-            if (jobId) {
-              await updateJobProgress(jobId, {
-                completedSteps: 3,
-                currentStep: 'Processing completed',
+            await supabase
+              .from('processing_jobs')
+              .update({
                 status: 'completed',
-                outputPath: publicUrl
-              });
-            }
+                completed_at: new Date().toISOString(),
+                output_path: publicUrl
+              })
+              .eq('id', jobId);
 
-            await cleanupFile(outputPath);
+            await fs.promises.unlink(outputPath);
             resolve({ outputPath: publicUrl });
           } catch (error) {
             console.error('Error in post-processing:', error);
-            if (jobId) {
-              await updateJobProgress(jobId, {
+            await supabase
+              .from('processing_jobs')
+              .update({
                 status: 'error',
-                errorMessage: error.message
-              });
-            }
+                last_error: error.message
+              })
+              .eq('id', jobId);
             reject(error);
           }
         })
         .on('error', async (err) => {
           console.error('FFmpeg error:', err);
-          hasErrored = true;
-          if (jobId) {
-            await updateJobProgress(jobId, {
+          await supabase
+            .from('processing_jobs')
+            .update({
               status: 'error',
-              errorMessage: err.message
-            });
-          }
+              last_error: err.message
+            })
+            .eq('id', jobId);
           reject(err);
         })
         .save(outputPath);
     });
   } catch (error) {
     console.error('Error in video processing service:', error);
-    if (jobId) {
-      await updateJobProgress(jobId, {
+    await supabase
+      .from('processing_jobs')
+      .update({
         status: 'error',
-        errorMessage: error.message
-      });
-    }
+        last_error: error.message
+      })
+      .eq('id', jobId);
     throw error;
   }
 };
