@@ -21,6 +21,30 @@ interface ProcessedVideoResult {
 
 const PROCESSING_TIMEOUT = 300000; // 5 minutes timeout
 
+const updateJobProgress = async (jobId: string, update: {
+  status?: string;
+  errorMessage?: string;
+}) => {
+  try {
+    const { error } = await supabase
+      .from('processing_jobs')
+      .update({
+        status: update.status,
+        error_message: update.errorMessage,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', jobId);
+
+    if (error) {
+      console.error('Error updating job progress:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Failed to update job progress:', error);
+    throw error;
+  }
+};
+
 export const processVideoHandler = async (
   req: Request<{}, any, ProcessVideoRequest>, 
   res: Response
