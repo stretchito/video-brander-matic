@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { corsHeaders } from './index';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -9,6 +9,10 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 export async function downloadFile(bucketName: string, filePath: string): Promise<Uint8Array> {
   console.log(`Attempting to download file from bucket: ${bucketName}, path: ${filePath}`);
   
+  if (!filePath) {
+    throw new Error('File path is required');
+  }
+
   try {
     const { data, error } = await supabase
       .storage
@@ -36,6 +40,10 @@ export async function downloadFile(bucketName: string, filePath: string): Promis
 export async function uploadFile(bucketName: string, filePath: string, file: Blob): Promise<string> {
   console.log(`Attempting to upload file to bucket: ${bucketName}, path: ${filePath}`);
   
+  if (!filePath) {
+    throw new Error('File path is required');
+  }
+
   try {
     const { error: uploadError } = await supabase
       .storage
@@ -61,32 +69,6 @@ export async function uploadFile(bucketName: string, filePath: string, file: Blo
     return publicUrl;
   } catch (error) {
     console.error('Error in uploadFile:', error);
-    throw error;
-  }
-}
-
-export async function getFileInfo(bucketName: string, filePath: string) {
-  console.log(`Getting file info for ${filePath} in bucket ${bucketName}`);
-  
-  try {
-    const { data, error } = await supabase
-      .storage
-      .from(bucketName)
-      .list('', {
-        limit: 1,
-        offset: 0,
-        search: filePath
-      });
-
-    if (error) {
-      console.error('Error getting file info:', error);
-      throw new Error(`Error getting file info: ${error.message}`);
-    }
-
-    console.log('File info:', data);
-    return data[0];
-  } catch (error) {
-    console.error('Error in getFileInfo:', error);
     throw error;
   }
 }
