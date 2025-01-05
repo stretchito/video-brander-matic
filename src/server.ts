@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { supabase } from './lib/supabase';
+import { processVideo } from './services/videoProcessingService';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,6 +13,7 @@ app.use(express.json());
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
+  return;
 });
 
 interface ProcessVideoRequest {
@@ -53,14 +55,41 @@ app.post('/process-video', async (req: Request<{}, any, ProcessVideoRequest>, re
       return;
     }
 
-    res.json({ 
-      message: 'Video processing job created',
-      jobId: data.id
+    // Start video processing
+    const processedVideo = await processVideo({
+      videoPath: videoUrl,
+      logoPath: options.logo_path || '',
+      position: options.position || 'top-left',
+      greyscale: options.greyscale || false,
+      outputFormat: options.output_format || 'mp4'
     });
+
+    // Update job with processed video information
+    const { error: updateError } = await supabase
+      .from('processing_jobs')
+      .update({
+        status: 'completed',
+        output_path: processedVideo.publicUrl
+      })
+      .eq('id', data.id);
+
+    if (updateError) {
+      console.error('Error updating job:', updateError);
+      res.status(500).json({ error: 'Failed to update job status' });
+      return;
+    }
+
+    res.json({ 
+      message: 'Video processing completed',
+      jobId: data.id,
+      outputUrl: processedVideo.publicUrl
+    });
+    return;
 
   } catch (error) {
     console.error('Server error:', error);
     res.status(500).json({ error: 'Internal server error' });
+    return;
   }
 });
 
@@ -87,10 +116,12 @@ app.get('/job-status/:jobId', async (req: Request<{ jobId: string }>, res: Respo
     }
 
     res.json(data);
+    return;
 
   } catch (error) {
     console.error('Server error:', error);
     res.status(500).json({ error: 'Internal server error' });
+    return;
   }
 });
 
