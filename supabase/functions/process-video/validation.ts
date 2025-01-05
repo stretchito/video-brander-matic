@@ -3,37 +3,28 @@ export interface ProcessVideoRequest {
   logoPath: string;
   position: string;
   greyscale: boolean;
-  outputFormat: string;
+  format: string;
 }
 
-export function validateRequest(body: any): ProcessVideoRequest {
-  if (!body) {
-    throw new Error('Request body is required');
-  }
-
-  const { videoPath, logoPath, position, greyscale, outputFormat } = body;
-
-  if (!videoPath) {
+export function validateRequest(data: any): ProcessVideoRequest {
+  if (!data.videoPath) {
     throw new Error('Video path is required');
   }
-
-  if (!logoPath) {
+  if (!data.logoPath) {
     throw new Error('Logo path is required');
   }
-
-  if (!position) {
+  if (!data.position) {
     throw new Error('Position is required');
   }
-
-  if (!outputFormat) {
+  if (!data.format) {
     throw new Error('Output format is required');
   }
 
   return {
-    videoPath,
-    logoPath,
-    position,
-    greyscale: !!greyscale,
-    outputFormat
+    videoPath: data.videoPath,
+    logoPath: data.logoPath,
+    position: data.position,
+    greyscale: Boolean(data.greyscale),
+    format: data.format
   };
 }
