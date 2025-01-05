@@ -1,12 +1,8 @@
-import ffmpeg from 'fluent-ffmpeg';
-import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { supabase } from '../lib/supabase';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import fs from 'fs';
+import { ensureUploadsDirectory, cleanupFile } from '../utils/fileUtils';
+import { createFFmpegCommand } from '../utils/ffmpegUtils';
+import { uploadProcessedVideo, updateJobProgress } from '../utils/supabaseUtils';
 
 interface ProcessVideoOptions {
   videoPath: string;
@@ -19,15 +15,13 @@ interface ProcessVideoOptions {
 
 export const processVideo = async (options: ProcessVideoOptions) => {
   const { videoPath, logoPath, position, greyscale, outputFormat, jobId } = options;
+  const uploadsDir = ensureUploadsDirectory();
+  const outputFileName = `processed/output_${Date.now()}.${outputFormat}`;
+  const outputPath = path.join(uploadsDir, outputFileName);
   
   try {
     console.log('Starting video processing with FFmpeg...', options);
     
-    // Generate a unique output filename in the processed/ folder
-    const outputFileName = `processed/output_${Date.now()}.${outputFormat}`;
-    const outputPath = path.join(__dirname, '../uploads', outputFileName);
-    
-    // Update job with initial progress
     if (jobId) {
       await updateJobProgress(jobId, {
         status: 'processing',
@@ -38,8 +32,15 @@ export const processVideo = async (options: ProcessVideoOptions) => {
     }
 
     return new Promise((resolve, reject) => {
-      let command = ffmpeg(videoPath)
-        .input(logoPath)
+      const command = createFFmpegCommand(
+        videoPath,
+        logoPath,
+        outputPath,
+        position,
+        greyscale
+      );
+
+      command
         .on('start', async (commandLine) => {
           console.log('FFmpeg command:', commandLine);
           if (jobId) {
@@ -58,26 +59,15 @@ export const processVideo = async (options: ProcessVideoOptions) => {
           }
         })
         .on('end', async () => {
-          console.log('Processing finished');
+          console.log('FFmpeg processing finished');
           
           try {
-            // Upload the processed file to Supabase storage
             const fileBuffer = await fs.promises.readFile(outputPath);
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('videos')
-              .upload(outputFileName, fileBuffer, {
-                contentType: `video/${outputFormat}`,
-                upsert: true
-              });
-
-            if (uploadError) {
-              throw uploadError;
-            }
-
-            // Get the public URL for the uploaded file
-            const { data: { publicUrl } } = supabase.storage
-              .from('videos')
-              .getPublicUrl(outputFileName);
+            const publicUrl = await uploadProcessedVideo(
+              fileBuffer,
+              outputFileName,
+              `video/${outputFormat}`
+            );
 
             if (jobId) {
               await updateJobProgress(jobId, {
@@ -88,12 +78,10 @@ export const processVideo = async (options: ProcessVideoOptions) => {
               });
             }
 
-            // Clean up the local file
-            await fs.promises.unlink(outputPath);
-            
+            await cleanupFile(outputPath);
             resolve({ outputPath: publicUrl });
           } catch (error) {
-            console.error('Error uploading processed video:', error);
+            console.error('Error in post-processing:', error);
             reject(error);
           }
         })
@@ -106,35 +94,7 @@ export const processVideo = async (options: ProcessVideoOptions) => {
             });
           }
           reject(err);
-        });
-
-      // Add filters based on options
-      const filters = [];
-      
-      // Add overlay filter
-      filters.push({
-        filter: 'overlay',
-        options: getOverlayPosition(position),
-        inputs: ['0:v', '1:v'],
-        outputs: ['v']
-      });
-
-      // Add greyscale if enabled
-      if (greyscale) {
-        filters.push({
-          filter: 'hue',
-          options: { s: 0 },
-          inputs: ['v'],
-          outputs: ['out']
-        });
-      }
-
-      // Apply filters
-      command = command.complexFilter(filters);
-
-      // Set output options and save
-      command
-        .outputOptions('-c:a copy')
+        })
         .save(outputPath);
     });
   } catch (error) {
@@ -148,61 +108,3 @@ export const processVideo = async (options: ProcessVideoOptions) => {
     throw error;
   }
 };
-
-async function updateJobProgress(jobId: string, update: {
-  status?: string;
-  completedSteps?: number;
-  totalSteps?: number;
-  currentStep?: string;
-  errorMessage?: string;
-  outputPath?: string;
-}) {
-  try {
-    // Get current processing steps
-    const { data: currentJob } = await supabase
-      .from('processing_jobs')
-      .select('processing_steps')
-      .eq('id', jobId)
-      .single();
-
-    // Create new processing steps array
-    const processingSteps = currentJob?.processing_steps || [];
-    if (update.currentStep) {
-      processingSteps.push(update.currentStep);
-    }
-
-    const { error } = await supabase
-      .from('processing_jobs')
-      .update({
-        status: update.status,
-        completed_steps: update.completedSteps,
-        total_steps: update.totalSteps,
-        processing_steps: processingSteps,
-        error_message: update.errorMessage,
-        output_path: update.outputPath,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', jobId);
-
-    if (error) {
-      console.error('Error updating job progress:', error);
-    }
-  } catch (error) {
-    console.error('Failed to update job progress:', error);
-  }
-}
-
-function getOverlayPosition(position: string): string {
-  switch (position) {
-    case 'top-left':
-      return '10:10';
-    case 'top-right':
-      return 'main_w-overlay_w-10:10';
-    case 'bottom':
-      return '(main_w-overlay_w)/2:main_h-overlay_h-10';
-    case 'center':
-      return '(main_w-overlay_w)/2:(main_h-overlay_h)/2';
-    default:
-      return '10:10';
-  }
-}
