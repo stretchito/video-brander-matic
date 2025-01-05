@@ -10,7 +10,7 @@ import { dirname } from 'path';
 import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__dirname);
+const __dirname = dirname(__filename);
 
 // Configure ffmpeg path for production
 if (process.env.FFMPEG_PATH) {
@@ -44,9 +44,9 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  // Get the current FFmpeg path using the command() method
-  const command = ffmpeg();
-  console.log('FFmpeg path:', command._getFfmpegPath() || 'Not set');
+  // Log the FFmpeg path using the public API
+  const ffmpegPath = process.env.FFMPEG_PATH || 'Not set';
+  console.log('FFmpeg path:', ffmpegPath);
 });
 
 export default app;
