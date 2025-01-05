@@ -28,7 +28,7 @@ export const useVideoProcessing = () => {
       setProcessedUrls([]);
 
       for (const [index, { file, path }] of videoState.videoFiles.entries()) {
-        console.log('Processing video:', { path: path, logoPath: videoState.logoPath });
+        console.log('Starting to process video:', { path, logoPath: videoState.logoPath });
         
         processingStatus.updateStatus(
           'processing',
@@ -42,13 +42,24 @@ export const useVideoProcessing = () => {
         );
 
         // Get the video and logo URLs from Supabase storage
-        const { data: videoData } = await supabase.storage
+        console.log('Getting signed URLs...');
+        const { data: videoData, error: videoError } = await supabase.storage
           .from('videos')
           .createSignedUrl(path, 3600);
 
-        const { data: logoData } = await supabase.storage
+        const { data: logoData, error: logoError } = await supabase.storage
           .from('logos')
           .createSignedUrl(videoState.logoPath, 3600);
+
+        if (videoError) {
+          console.error('Error getting video URL:', videoError);
+          throw new Error(`Failed to get video URL: ${videoError.message}`);
+        }
+
+        if (logoError) {
+          console.error('Error getting logo URL:', logoError);
+          throw new Error(`Failed to get logo URL: ${logoError.message}`);
+        }
 
         if (!videoData?.signedUrl || !logoData?.signedUrl) {
           throw new Error('Failed to get signed URLs for video or logo');
@@ -61,9 +72,13 @@ export const useVideoProcessing = () => {
 
         // Send processing request to our server with a timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout
+        const timeoutId = setTimeout(() => {
+          console.log('Processing timeout reached, aborting request...');
+          controller.abort();
+        }, 600000); // 10 minute timeout
 
         try {
+          console.log('Making request to process-video endpoint...');
           const response = await fetch(`${SERVER_URL}/process-video`, {
             method: 'POST',
             headers: {
@@ -83,7 +98,7 @@ export const useVideoProcessing = () => {
 
           if (!response.ok) {
             const errorText = await response.text();
-            console.error('Processing failed:', errorText);
+            console.error('Processing failed with status:', response.status, errorText);
             throw new Error(`Processing failed: ${errorText}`);
           }
 
@@ -112,6 +127,7 @@ export const useVideoProcessing = () => {
             console.log('Job status:', statusData);
             
             if (statusData.status === 'completed') {
+              console.log('Job completed successfully');
               jobCompleted = true;
               const newUrls = [...processedUrls, statusData.outputUrl];
               setProcessedUrls(newUrls);
@@ -122,9 +138,10 @@ export const useVideoProcessing = () => {
                 `Completed processing video ${index + 1}`
               );
             } else if (statusData.status === 'error') {
+              console.error('Job failed with error:', statusData.error);
               throw new Error(statusData.error || 'Processing failed');
             } else {
-              // Wait before next poll
+              console.log('Job still processing, waiting before next poll...');
               await new Promise(resolve => setTimeout(resolve, 2000));
               retryCount++;
             }
@@ -136,6 +153,7 @@ export const useVideoProcessing = () => {
 
         } catch (error) {
           if (error.name === 'AbortError') {
+            console.error('Video processing timed out');
             throw new Error('Video processing timed out. Please try again with a shorter video.');
           }
           throw error;
