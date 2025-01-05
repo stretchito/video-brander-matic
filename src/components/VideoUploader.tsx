@@ -14,7 +14,10 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
   const { uploadStates, handleUpload } = useMultiFileUpload({
     bucket: 'videos',
     fileTypes: ['video'],
-    onFileSelect: onVideoSelect
+    onFileSelect: (file: File, path: string) => {
+      console.log('Video selected:', { file, path });
+      onVideoSelect(file, path);
+    }
   });
 
   const onDrop = async (acceptedFiles: File[]) => {

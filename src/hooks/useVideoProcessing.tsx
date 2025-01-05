@@ -26,7 +26,9 @@ export const useVideoProcessing = () => {
       setProcessedCount(0);
       setProcessedUrls([]);
 
-      for (const [index, { file }] of videoState.videoFiles.entries()) {
+      for (const [index, { file, path }] of videoState.videoFiles.entries()) {
+        console.log('Processing video:', { path: path, logoPath: videoState.logoPath });
+        
         processingStatus.updateStatus(
           'processing',
           `Processing video ${index + 1} of ${videoState.videoFiles.length}`,
@@ -45,8 +47,8 @@ export const useVideoProcessing = () => {
 
         const { data, error } = await supabase.functions.invoke('process-video', {
           body: {
-            videoFile: file,
-            logoFile: videoState.logoFile,
+            videoPath: path,
+            logoPath: videoState.logoPath,
             position: videoState.position,
             greyscale: videoState.greyscale,
             format: videoState.format
@@ -54,6 +56,7 @@ export const useVideoProcessing = () => {
         });
 
         if (error) {
+          console.error('Processing error:', error);
           throw error;
         }
 
