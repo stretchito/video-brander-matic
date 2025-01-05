@@ -7,29 +7,15 @@ export const useProcessingStatus = () => {
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>('');
-  const [totalSteps, setTotalSteps] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState(0);
-  const [processingSteps, setProcessingSteps] = useState<string[]>([]);
 
   const updateStatus = (
     newStatus: ProcessingStatus,
     newAction: string,
-    newProgress: number,
-    steps?: { total?: number; completed?: number; current?: string }
+    newProgress: number
   ) => {
     setStatus(newStatus);
     setCurrentAction(newAction);
     setProgress(newProgress);
-
-    if (steps?.total !== undefined) {
-      setTotalSteps(steps.total);
-    }
-    if (steps?.completed !== undefined) {
-      setCompletedSteps(steps.completed);
-    }
-    if (steps?.current) {
-      setProcessingSteps(prev => [...prev, steps.current]);
-    }
   };
 
   const resetStatus = () => {
@@ -38,25 +24,19 @@ export const useProcessingStatus = () => {
     setProgress(0);
     setIsProcessing(false);
     setProcessedVideoUrl('');
-    setTotalSteps(0);
-    setCompletedSteps(0);
-    setProcessingSteps([]);
   };
 
   return {
     status,
-    setStatus,
     currentAction,
-    setCurrentAction,
     progress,
-    setProgress,
     isProcessing,
-    setIsProcessing,
     processedVideoUrl,
+    setStatus,
+    setCurrentAction,
+    setProgress,
+    setIsProcessing,
     setProcessedVideoUrl,
-    totalSteps,
-    completedSteps,
-    processingSteps,
     updateStatus,
     resetStatus
   };

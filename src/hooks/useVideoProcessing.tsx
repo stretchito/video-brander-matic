@@ -1,22 +1,16 @@
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useVideoState } from './useVideoState';
 import { useProcessingStatus } from './useProcessingStatus';
-import { useCloudinaryProcessing } from './useCloudinaryProcessing';
-import { useEffect, useState } from 'react';
+import { useProcessingSteps } from './useProcessingSteps';
 
 export const useVideoProcessing = () => {
   const videoState = useVideoState();
   const processingStatus = useProcessingStatus();
-  const { processVideo } = useCloudinaryProcessing();
+  const processingSteps = useProcessingSteps();
   const [processedCount, setProcessedCount] = useState(0);
   const [processedUrls, setProcessedUrls] = useState<string[]>([]);
-
-  useEffect(() => {
-    videoState.setVideoFiles([]);
-    setProcessedCount(0);
-    setProcessedUrls([]);
-  }, []);
 
   const handleProcess = async () => {
     try {
@@ -26,11 +20,8 @@ export const useVideoProcessing = () => {
       }
 
       processingStatus.setIsProcessing(true);
-      processingStatus.updateStatus('processing', 'Preparing files...', 10, {
-        total: videoState.videoFiles.length * 3, // 3 steps per video
-        completed: 0,
-        current: 'Initializing processing...'
-      });
+      processingStatus.updateStatus('processing', 'Preparing files...', 10);
+      processingSteps.updateSteps(videoState.videoFiles.length * 3, 0, 'Initializing processing...');
 
       setProcessedCount(0);
       setProcessedUrls([]);
@@ -39,11 +30,12 @@ export const useVideoProcessing = () => {
         processingStatus.updateStatus(
           'processing',
           `Processing video ${index + 1} of ${videoState.videoFiles.length}`,
-          30,
-          {
-            completed: index * 3,
-            current: `Starting video ${index + 1} processing`
-          }
+          30
+        );
+        processingSteps.updateSteps(
+          videoState.videoFiles.length * 3,
+          index * 3,
+          `Starting video ${index + 1} processing`
         );
 
         const { data: { user } } = await supabase.auth.getUser();
@@ -51,70 +43,45 @@ export const useVideoProcessing = () => {
           throw new Error('User not authenticated');
         }
 
-        processingStatus.updateStatus(
-          'processing',
-          `Applying effects to video ${index + 1}`,
-          50,
-          {
-            completed: index * 3 + 1,
-            current: `Applying effects to video ${index + 1}`
+        const { data, error } = await supabase.functions.invoke('process-video', {
+          body: {
+            videoFile: file,
+            logoFile: videoState.logoFile,
+            position: videoState.position,
+            greyscale: videoState.greyscale,
+            format: videoState.format
           }
-        );
+        });
 
-        const { finalVideoUrl, videoPublicId, logoPublicId } = await processVideo(
-          file,
-          videoState.logoFile,
-          videoState.position,
-          videoState.greyscale,
-          videoState.format
-        );
+        if (error) {
+          throw error;
+        }
 
-        const newUrls = [...processedUrls, finalVideoUrl];
+        const newUrls = [...processedUrls, data.finalVideoUrl];
         setProcessedUrls(newUrls);
         setProcessedCount(prev => prev + 1);
 
         processingStatus.updateStatus(
           index === videoState.videoFiles.length - 1 ? 'completed' : 'processing',
-          finalVideoUrl,
-          Math.round((index + 1) / videoState.videoFiles.length * 100),
-          {
-            completed: index * 3 + 2,
-            current: `Completed processing video ${index + 1}`
-          }
+          data.finalVideoUrl,
+          Math.round((index + 1) / videoState.videoFiles.length * 100)
         );
-
-        const { error: jobError } = await supabase
-          .from('processing_jobs')
-          .insert({
-            user_id: user.id,
-            video_path: videoPublicId,
-            logo_path: logoPublicId,
-            position: videoState.position,
-            greyscale: videoState.greyscale,
-            output_format: videoState.format,
-            status: 'completed',
-            output_path: finalVideoUrl,
-            total_steps: 3,
-            completed_steps: 3,
-            processing_steps: processingStatus.processingSteps
-          });
-
-        if (jobError) {
-          throw jobError;
-        }
+        processingSteps.updateSteps(
+          videoState.videoFiles.length * 3,
+          index * 3 + 2,
+          `Completed processing video ${index + 1}`
+        );
       }
 
       toast.success('Video processing completed!');
 
     } catch (error) {
       console.error('Processing error:', error);
-      processingStatus.updateStatus(
-        'error',
-        'Error processing video',
-        0,
-        {
-          current: 'Processing failed'
-        }
+      processingStatus.updateStatus('error', 'Error processing video', 0);
+      processingSteps.updateSteps(
+        processingSteps.totalSteps,
+        processingSteps.completedSteps,
+        'Processing failed'
       );
       toast.error('Error processing video');
     } finally {
@@ -125,6 +92,7 @@ export const useVideoProcessing = () => {
   return {
     ...videoState,
     ...processingStatus,
+    ...processingSteps,
     processedCount,
     totalVideos: videoState.videoFiles.length,
     handleProcess
