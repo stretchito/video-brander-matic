@@ -1,5 +1,16 @@
 import cors from 'cors';
 import express from 'express';
 
-export const corsMiddleware = cors();
+// Configure CORS with specific options
+export const corsMiddleware = cors({
+  origin: [
+    'https://54f66a8e-79e4-4758-9da5-a31898a050e3.lovableproject.com',
+    'http://localhost:5173', // For local development
+    /\.lovableproject\.com$/ // Allow all subdomains of lovableproject.com
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+});
+
 export const jsonMiddleware = express.json();
