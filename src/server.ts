@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { supabase } from './lib/supabase';
 
@@ -10,12 +10,24 @@ app.use(cors());
 app.use(express.json());
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
+interface ProcessVideoRequest {
+  videoUrl: string;
+  options: {
+    logo_path?: string;
+    position?: string;
+    greyscale?: boolean;
+    output_format?: string;
+    transcription_enabled?: boolean;
+    captions_enabled?: boolean;
+  }
+}
+
 // Video processing endpoint
-app.post('/process-video', async (req, res) => {
+app.post('/process-video', async (req: Request<{}, {}, ProcessVideoRequest>, res: Response) => {
   try {
     const { videoUrl, options } = req.body;
     
@@ -51,7 +63,7 @@ app.post('/process-video', async (req, res) => {
 });
 
 // Job status endpoint
-app.get('/job-status/:jobId', async (req, res) => {
+app.get('/job-status/:jobId', async (req: Request<{ jobId: string }>, res: Response) => {
   try {
     const { jobId } = req.params;
 
