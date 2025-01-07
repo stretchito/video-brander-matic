@@ -1,5 +1,5 @@
-import ffmpeg from 'fluent-ffmpeg';
 import { supabase } from '../lib/supabase';
+import { createFFmpegCommand } from './ffmpegService';
 
 interface ProcessVideoParams {
   videoPath: string;
@@ -16,105 +16,66 @@ export const processVideo = async (params: ProcessVideoParams) => {
   console.log('Starting video processing:', { jobId, videoPath });
   
   try {
-    // Update job status to processing
-    await supabase
-      .from('processing_jobs')
-      .update({
-        status: 'processing',
-        started_at: new Date().toISOString(),
-        attempt_count: 1
-      })
-      .eq('id', jobId);
+    await updateJobStatus(jobId, 'processing');
 
     return new Promise((resolve, reject) => {
-      const command = ffmpeg(videoPath)
-        .input(logoPath)
-        .on('start', (commandLine) => {
-          console.log('FFmpeg command:', commandLine);
-        })
-        .on('progress', (progress) => {
-          console.log('Processing:', progress);
-        })
+      const command = createFFmpegCommand(videoPath, logoPath, position, greyscale);
+
+      command
         .on('end', async () => {
           console.log('FFmpeg processing finished');
           try {
             const outputPath = `processed/${Date.now()}_${jobId}.${outputFormat}`;
-            
-            await supabase
-              .from('processing_jobs')
-              .update({
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                output_path: outputPath
-              })
-              .eq('id', jobId);
-
+            await updateJobCompletion(jobId, outputPath);
             resolve({ outputPath });
           } catch (error) {
-            console.error('Error in post-processing:', error);
-            await supabase
-              .from('processing_jobs')
-              .update({
-                status: 'error',
-                last_error: error.message
-              })
-              .eq('id', jobId);
+            await updateJobError(jobId, error.message);
             reject(error);
           }
         })
         .on('error', async (err) => {
           console.error('FFmpeg error:', err);
-          await supabase
-            .from('processing_jobs')
-            .update({
-              status: 'error',
-              last_error: err.message
-            })
-            .eq('id', jobId);
+          await updateJobError(jobId, err.message);
           reject(err);
         });
 
-      // Add filters based on parameters
-      const filters = [];
-      
-      // Add overlay position
-      const overlayPosition = getOverlayPosition(position);
-      filters.push(`overlay=${overlayPosition}`);
-      
-      // Add greyscale if enabled
-      if (greyscale) {
-        filters.push('hue=s=0');
-      }
-
-      command
-        .complexFilter(filters.join(','))
-        .outputOptions('-c:a copy')
-        .save(`output.${outputFormat}`);
+      command.save(`output.${outputFormat}`);
     });
   } catch (error) {
     console.error('Error in video processing service:', error);
-    await supabase
-      .from('processing_jobs')
-      .update({
-        status: 'error',
-        last_error: error.message
-      })
-      .eq('id', jobId);
+    await updateJobError(jobId, error.message);
     throw error;
   }
 };
 
-function getOverlayPosition(position: string): string {
-  switch (position) {
-    case 'top-left':
-      return '10:10';
-    case 'top-right':
-      return 'main_w-overlay_w-10:10';
-    case 'bottom':
-      return '(main_w-overlay_w)/2:main_h-overlay_h-10';
-    case 'center':
-      return '(main_w-overlay_w)/2:(main_h-overlay_h)/2';
-    default:
-      return '10:10';
-  }
-}
+const updateJobStatus = async (jobId: string, status: string) => {
+  await supabase
+    .from('processing_jobs')
+    .update({
+      status,
+      started_at: new Date().toISOString(),
+      attempt_count: 1
+    })
+    .eq('id', jobId);
+};
+
+const updateJobCompletion = async (jobId: string, outputPath: string) => {
+  await supabase
+    .from('processing_jobs')
+    .update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      output_path: outputPath
+    })
+    .eq('id', jobId);
+};
+
+const updateJobError = async (jobId: string, errorMessage: string) => {
+  await supabase
+    .from('processing_jobs')
+    .update({
+      status: 'error',
+      last_error: errorMessage
+    })
+    .eq('id', jobId);
+};
