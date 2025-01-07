@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import ProcessingProgressBar from './ProcessingProgressBar';
-import StatusCard from './StatusCard';
+import ProcessingProgressSection from './status/ProcessingProgressSection';
+import ProcessingStatusCards from './status/ProcessingStatusCards';
 import ProcessedVideosModal from './ProcessedVideosModal';
+import { ProcessingStatus as ProcessingStatusType } from '@/types/videoProcessing';
 
 interface ProcessingStatusProps {
-  status: 'waiting' | 'processing' | 'completed' | 'error';
+  status: ProcessingStatusType;
   currentAction: string;
   progress: number;
   totalVideos?: number;
@@ -45,43 +46,25 @@ const ProcessingStatus = ({
   const allVideosProcessed = processedCount === totalVideos && totalVideos > 0;
   const showSuccessMessage = status === 'completed' && allVideosProcessed;
 
-  // Calculate overall progress including steps
-  const calculatedProgress = totalSteps > 0 
-    ? Math.round((completedSteps / totalSteps) * 100)
-    : progress;
-
   return (
     <div className="flex flex-col gap-4">
-      <ProcessingProgressBar 
-        status={status} 
-        progress={calculatedProgress} 
+      <ProcessingProgressSection
+        status={status}
+        progress={progress}
+        totalSteps={totalSteps}
+        completedSteps={completedSteps}
       />
       
-      <div className="flex flex-col md:flex-row justify-center gap-4">
-        <StatusCard
-          title="Status"
-          status={status}
-          currentAction={currentAction}
-          hasProcessedVideos={hasProcessedVideos}
-          processedCount={processedCount}
-          totalVideos={totalVideos}
-          onViewVideos={() => setIsModalOpen(true)}
-          showSuccessMessage={false}
-          processingSteps={processingSteps}
-        />
-
-        <StatusCard
-          title="Current Action"
-          status={status}
-          currentAction={currentAction}
-          hasProcessedVideos={hasProcessedVideos}
-          processedCount={processedCount}
-          totalVideos={totalVideos}
-          onViewVideos={() => setIsModalOpen(true)}
-          showSuccessMessage={showSuccessMessage}
-          processingSteps={processingSteps}
-        />
-      </div>
+      <ProcessingStatusCards
+        status={status}
+        currentAction={currentAction}
+        hasProcessedVideos={hasProcessedVideos}
+        processedCount={processedCount}
+        totalVideos={totalVideos}
+        onViewVideos={() => setIsModalOpen(true)}
+        showSuccessMessage={showSuccessMessage}
+        processingSteps={processingSteps}
+      />
 
       <ProcessedVideosModal
         isOpen={isModalOpen}
