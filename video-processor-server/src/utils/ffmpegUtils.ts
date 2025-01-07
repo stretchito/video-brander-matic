@@ -1,5 +1,3 @@
-import ffmpeg from 'fluent-ffmpeg';
-
 export const getOverlayPosition = (position: string): string => {
   switch (position) {
     case 'top-left':
@@ -15,70 +13,12 @@ export const getOverlayPosition = (position: string): string => {
   }
 };
 
-export const createFFmpegCommand = (
-  inputPath: string,
-  logoPath: string,
-  outputPath: string,
-  position: string,
-  greyscale: boolean
-): ffmpeg.FfmpegCommand => {
-  console.log('Creating FFmpeg command with paths:', { inputPath, logoPath, outputPath });
-  
-  // Verify input files exist
-  console.log('Verifying input files...');
-  
-  const command = ffmpeg(inputPath)
-    .input(logoPath)
-    .on('start', (commandLine) => {
-      console.log('FFmpeg command:', commandLine);
-    })
-    .on('progress', (progress) => {
-      console.log('Processing:', {
-        frames: progress.frames,
-        currentFps: progress.currentFps,
-        currentKbps: progress.currentKbps,
-        targetSize: progress.targetSize,
-        timemark: progress.timemark,
-        percent: progress.percent
-      });
-    })
-    .on('stderr', (stderrLine) => {
-      console.log('FFmpeg stderr:', stderrLine);
-    })
-    .on('error', (err) => {
-      console.error('FFmpeg processing error:', err);
-    });
+export const validateVideoFile = (file: File): boolean => {
+  const validTypes = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo'];
+  return validTypes.includes(file.type);
+};
 
-  const filters = [];
-  const overlayPosition = getOverlayPosition(position);
-  
-  // Add overlay filter
-  filters.push({
-    filter: 'overlay',
-    options: overlayPosition,
-    inputs: ['0:v', '1:v'],
-    outputs: ['v']
-  });
-
-  // Add greyscale filter if enabled
-  if (greyscale) {
-    filters.push({
-      filter: 'hue',
-      options: { s: 0 },
-      inputs: ['v'],
-      outputs: ['out']
-    });
-  }
-
-  // Apply filters
-  command.complexFilter(filters);
-
-  // Set output options
-  command
-    .outputOptions('-c:a copy')
-    .outputOptions('-movflags +faststart') // Enable streaming
-    .outputOptions('-preset ultrafast')    // Faster encoding
-    .outputOptions('-y');                  // Overwrite output file
-
-  return command;
+export const validateLogoFile = (file: File): boolean => {
+  const validTypes = ['image/png', 'image/jpeg', 'image/gif'];
+  return validTypes.includes(file.type);
 };

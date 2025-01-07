@@ -7,16 +7,18 @@ export const createFFmpegCommand = (
   position: string,
   greyscale: boolean
 ): ffmpeg.FfmpegCommand => {
+  console.log('Creating FFmpeg command with paths:', { inputPath, logoPath });
+  
   const command = ffmpeg(inputPath)
     .input(logoPath)
-    .on('start', (commandLine) => {
+    .on('start', (commandLine: string) => {
       console.log('FFmpeg command:', commandLine);
     })
-    .on('progress', (progress) => {
+    .on('progress', (progress: any) => {
       console.log('Processing:', progress);
     });
 
-  const filters = [];
+  const filters: string[] = [];
   const overlayPosition = getOverlayPosition(position);
   filters.push(`overlay=${overlayPosition}`);
   

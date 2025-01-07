@@ -13,8 +13,6 @@ interface ProcessVideoParams {
 export const processVideo = async (params: ProcessVideoParams) => {
   const { videoPath, logoPath, position, greyscale, outputFormat, jobId } = params;
   
-  console.log('Starting video processing:', { jobId, videoPath });
-  
   try {
     await updateJobStatus(jobId, 'processing');
 
@@ -23,7 +21,6 @@ export const processVideo = async (params: ProcessVideoParams) => {
 
       command
         .on('end', async () => {
-          console.log('FFmpeg processing finished');
           try {
             const outputPath = `processed/${Date.now()}_${jobId}.${outputFormat}`;
             await updateJobCompletion(jobId, outputPath);
@@ -34,7 +31,6 @@ export const processVideo = async (params: ProcessVideoParams) => {
           }
         })
         .on('error', async (err) => {
-          console.error('FFmpeg error:', err);
           await updateJobError(jobId, err.message);
           reject(err);
         });
@@ -42,7 +38,6 @@ export const processVideo = async (params: ProcessVideoParams) => {
       command.save(`output.${outputFormat}`);
     });
   } catch (error) {
-    console.error('Error in video processing service:', error);
     await updateJobError(jobId, error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
