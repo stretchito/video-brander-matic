@@ -33,7 +33,7 @@ const configureFfmpeg = () => {
     });
   } catch (error) {
     console.error('Error configuring FFmpeg:', error);
-    throw error; // Throw error to fail fast if FFmpeg is not properly configured
+    throw error;
   }
 };
 
@@ -68,7 +68,6 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log('Environment:', process.env.NODE_ENV);
-  console.log('FFmpeg path:', ffmpeg.path || 'Using system PATH');
   
   // Test FFmpeg version
   ffmpeg.getAvailableCodecs((err, codecs) => {
