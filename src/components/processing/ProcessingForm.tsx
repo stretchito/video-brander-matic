@@ -1,7 +1,6 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import ProcessingOptions from '../ProcessingOptions';
 import ProcessingStatus from './ProcessingStatus';
 import UploadSection from './UploadSection';
@@ -44,53 +43,51 @@ const ProcessingForm = ({
   onGreyscaleChange,
   onFormatChange,
   onProcess
-}: ProcessingFormProps) => {
-  return (
-    <>
-      <Card className="w-full h-full bg-white border-[#3A3F4C] shadow-lg">
-        <UploadSection
-          type="video"
-          onVideoSelect={onVideoSelect}
+}: ProcessingFormProps) => (
+  <>
+    <Card className="w-full h-full bg-white border-[#3A3F4C] shadow-lg">
+      <UploadSection
+        type="video"
+        onVideoSelect={onVideoSelect}
+      />
+    </Card>
+
+    <Card className="w-full h-full bg-white border-[#3A3F4C] shadow-lg">
+      <UploadSection
+        type="logo"
+        onLogoSelect={onLogoSelect}
+      />
+    </Card>
+
+    <div className="space-y-4">
+      <Card className="w-full bg-white border-[#3A3F4C] shadow-lg">
+        <ProcessingOptions
+          onPositionChange={onPositionChange}
+          onGreyscaleChange={onGreyscaleChange}
+          onFormatChange={onFormatChange}
         />
       </Card>
 
-      <Card className="w-full h-full bg-white border-[#3A3F4C] shadow-lg">
-        <UploadSection
-          type="logo"
-          onLogoSelect={onLogoSelect}
-        />
-      </Card>
-
-      <div className="space-y-4">
-        <Card className="w-full bg-white border-[#3A3F4C] shadow-lg">
-          <ProcessingOptions
-            onPositionChange={onPositionChange}
-            onGreyscaleChange={onGreyscaleChange}
-            onFormatChange={onFormatChange}
+      <div className="flex justify-center">
+        <TooltipProvider>
+          <RequirementsCheck
+            videoFiles={videoFiles}
+            logoFile={logoFile}
+            position={position}
+            format={format}
+            isProcessing={isProcessing}
+            onProcess={onProcess}
           />
-        </Card>
-
-        <div className="flex justify-center">
-          <TooltipProvider>
-            <RequirementsCheck
-              videoFiles={videoFiles}
-              logoFile={logoFile}
-              position={position}
-              format={format}
-              isProcessing={isProcessing}
-              onProcess={onProcess}
-            />
-          </TooltipProvider>
-        </div>
-
-        <ProcessingStatus
-          status={status}
-          currentAction={currentAction}
-          progress={progress}
-        />
+        </TooltipProvider>
       </div>
-    </>
-  );
-};
+
+      <ProcessingStatus
+        status={status}
+        currentAction={currentAction}
+        progress={progress}
+      />
+    </div>
+  </>
+);
 
 export default ProcessingForm;
