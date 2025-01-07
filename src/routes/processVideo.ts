@@ -16,8 +16,6 @@ interface ProcessedVideoResult {
   outputPath: string;
 }
 
-const PROCESSING_TIMEOUT = 300000; // 5 minutes timeout
-
 export const processVideoHandler = async (
   req: Request<{}, any, ProcessVideoRequest>, 
   res: Response
@@ -31,7 +29,6 @@ export const processVideoHandler = async (
       return;
     }
 
-    // Create new processing job
     const { data: newJob, error: jobError } = await supabase
       .from('processing_jobs')
       .insert({
@@ -51,7 +48,6 @@ export const processVideoHandler = async (
       return;
     }
 
-    // Start processing
     console.log('Starting video processing with job:', newJob);
     
     const processedVideo = await processVideo({
@@ -76,7 +72,7 @@ export const processVideoHandler = async (
     console.error('Server error:', error);
     res.status(500).json({ 
       error: 'Internal server error',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
     return;
   }
