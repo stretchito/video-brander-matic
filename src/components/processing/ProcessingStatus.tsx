@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import ProcessingProgressSection from './status/ProcessingProgressSection';
-import ProcessingStatusCards from './status/ProcessingStatusCards';
+import ProcessingProgressBar from './ProcessingProgressBar';
+import StatusCard from './StatusCard';
 import ProcessedVideosModal from './ProcessedVideosModal';
-import { ProcessingStatus as ProcessingStatusType } from '@/types/videoProcessing';
 
 interface ProcessingStatusProps {
-  status: ProcessingStatusType;
+  status: 'waiting' | 'processing' | 'completed' | 'error';
   currentAction: string;
   progress: number;
   totalVideos?: number;
   processedCount?: number;
-  totalSteps?: number;
-  completedSteps?: number;
-  processingSteps?: string[];
 }
 
 const ProcessingStatus = ({ 
@@ -20,16 +16,13 @@ const ProcessingStatus = ({
   currentAction, 
   progress,
   totalVideos = 0,
-  processedCount = 0,
-  totalSteps = 0,
-  completedSteps = 0,
-  processingSteps = []
+  processedCount = 0
 }: ProcessingStatusProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [videoUrls, setVideoUrls] = useState<string[]>([]);
   
   useEffect(() => {
-    if (currentAction.startsWith('https://') && currentAction.endsWith('.mp4')) {
+    if (currentAction.startsWith('https://res.cloudinary.com') && currentAction.endsWith('.mp4')) {
       setVideoUrls(prev => [...prev, currentAction]);
       setIsModalOpen(true);
     }
@@ -48,23 +41,31 @@ const ProcessingStatus = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <ProcessingProgressSection
-        status={status}
-        progress={progress}
-        totalSteps={totalSteps}
-        completedSteps={completedSteps}
-      />
+      <ProcessingProgressBar status={status} progress={progress} />
       
-      <ProcessingStatusCards
-        status={status}
-        currentAction={currentAction}
-        hasProcessedVideos={hasProcessedVideos}
-        processedCount={processedCount}
-        totalVideos={totalVideos}
-        onViewVideos={() => setIsModalOpen(true)}
-        showSuccessMessage={showSuccessMessage}
-        processingSteps={processingSteps}
-      />
+      <div className="flex flex-col md:flex-row justify-center gap-4">
+        <StatusCard
+          title="Status"
+          status={status}
+          currentAction={currentAction}
+          hasProcessedVideos={hasProcessedVideos}
+          processedCount={processedCount}
+          totalVideos={totalVideos}
+          onViewVideos={() => setIsModalOpen(true)}
+          showSuccessMessage={false}
+        />
+
+        <StatusCard
+          title="Current Action"
+          status={status}
+          currentAction={currentAction}
+          hasProcessedVideos={hasProcessedVideos}
+          processedCount={processedCount}
+          totalVideos={totalVideos}
+          onViewVideos={() => setIsModalOpen(true)}
+          showSuccessMessage={showSuccessMessage}
+        />
+      </div>
 
       <ProcessedVideosModal
         isOpen={isModalOpen}

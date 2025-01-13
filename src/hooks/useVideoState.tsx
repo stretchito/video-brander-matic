@@ -20,7 +20,7 @@ export const useVideoState = () => {
 
   return {
     videoFiles,
-    setVideoFiles,
+    setVideoFiles,  // Added this line to expose setVideoFiles
     logoFile,
     logoPath,
     position,

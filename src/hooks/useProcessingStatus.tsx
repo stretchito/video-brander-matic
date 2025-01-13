@@ -18,26 +18,17 @@ export const useProcessingStatus = () => {
     setProgress(newProgress);
   };
 
-  const resetStatus = () => {
-    setStatus('waiting');
-    setCurrentAction('Waiting to start...');
-    setProgress(0);
-    setIsProcessing(false);
-    setProcessedVideoUrl('');
-  };
-
   return {
     status,
-    currentAction,
-    progress,
-    isProcessing,
-    processedVideoUrl,
     setStatus,
+    currentAction,
     setCurrentAction,
+    progress,
     setProgress,
+    isProcessing,
     setIsProcessing,
+    processedVideoUrl,
     setProcessedVideoUrl,
-    updateStatus,
-    resetStatus
+    updateStatus
   };
 };
