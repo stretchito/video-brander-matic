@@ -122,6 +122,9 @@ export type Database = {
           email: string | null
           facebook_handle: string | null
           first_name: string | null
+          google_access_token: string | null
+          google_refresh_token: string | null
+          google_token_expiry: string | null
           id: string
           instagram_handle: string | null
           last_name: string | null
@@ -139,6 +142,9 @@ export type Database = {
           email?: string | null
           facebook_handle?: string | null
           first_name?: string | null
+          google_access_token?: string | null
+          google_refresh_token?: string | null
+          google_token_expiry?: string | null
           id: string
           instagram_handle?: string | null
           last_name?: string | null
@@ -156,6 +162,9 @@ export type Database = {
           email?: string | null
           facebook_handle?: string | null
           first_name?: string | null
+          google_access_token?: string | null
+          google_refresh_token?: string | null
+          google_token_expiry?: string | null
           id?: string
           instagram_handle?: string | null
           last_name?: string | null
