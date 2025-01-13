@@ -21,7 +21,7 @@ const UploadSection = ({ type, onVideoSelect, onLogoSelect }: UploadSectionProps
       </CardHeader>
       <CardContent>
         {isVideo ? (
-          <Tabs defaultValue="upload">
+          <Tabs defaultValue="upload" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="upload">Local Upload</TabsTrigger>
               <TabsTrigger value="drive">Google Drive</TabsTrigger>
@@ -30,9 +30,7 @@ const UploadSection = ({ type, onVideoSelect, onLogoSelect }: UploadSectionProps
               <VideoUploader onVideoSelect={onVideoSelect} />
             </TabsContent>
             <TabsContent value="drive">
-              <div className="space-y-4">
-                <GoogleDrivePicker onFileSelect={onVideoSelect} />
-              </div>
+              <GoogleDrivePicker onFileSelect={onVideoSelect} />
             </TabsContent>
           </Tabs>
         ) : (
