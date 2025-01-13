@@ -42,15 +42,24 @@ const GoogleDrivePicker = ({ onFileSelect }: GoogleDrivePickerProps) => {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('google_access_token, google_token_expiry')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (profile?.google_access_token) {
-        setAccessToken(profile.google_access_token);
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Failed to fetch user profile');
+        return;
       }
+
+      if (!profile?.google_access_token) {
+        toast.error('Please connect your Google account first');
+        return;
+      }
+
+      setAccessToken(profile.google_access_token);
     } catch (error) {
       console.error('Error initializing picker:', error);
       toast.error('Failed to initialize Google Drive picker');
