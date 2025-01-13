@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import ProcessingForm from '@/components/processing/ProcessingForm';
 import { useVideoProcessing } from '@/hooks/useVideoProcessing';
 import { PositionType, VideoFormat } from '@/types/videoProcessing';
+import { LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -28,8 +30,13 @@ const Index = () => {
   } = useVideoProcessing();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
+    try {
+      await supabase.auth.signOut();
+      navigate('/login');
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error('Error logging out');
+    }
   };
 
   const handlePositionChange = (pos: PositionType) => {
@@ -50,8 +57,9 @@ const Index = () => {
           <Button 
             variant="outline" 
             onClick={handleLogout}
-            className="bg-white hover:bg-gray-100"
+            className="bg-white hover:bg-gray-100 flex items-center gap-2"
           >
+            <LogOut className="w-4 h-4" />
             Logout
           </Button>
         </div>
