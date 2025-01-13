@@ -1,9 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import VideoUploader from '../VideoUploader';
 import LogoUploader from '../LogoUploader';
+import GoogleDrivePicker from '../upload/GoogleDrivePicker';
 
 interface UploadSectionProps {
   type: 'video' | 'logo';
@@ -30,17 +30,8 @@ const UploadSection = ({ type, onVideoSelect, onLogoSelect }: UploadSectionProps
               <VideoUploader onVideoSelect={onVideoSelect} />
             </TabsContent>
             <TabsContent value="drive">
-              <div className="p-10 border-2 border-dashed rounded-lg text-center">
-                <img 
-                  src="/lovable-uploads/ab643c32-7a17-4492-a85a-b889ea8e8bd8.png" 
-                  alt="Google Drive"
-                  className="w-12 h-12 mb-4 mx-auto"
-                />
-                <p className="mb-2 text-lg font-medium">Connect to Google Drive</p>
-                <p className="text-sm text-gray-500">Select videos from your Google Drive</p>
-                <Button variant="outline" className="mt-4">
-                  Connect to Drive
-                </Button>
+              <div className="space-y-4">
+                <GoogleDrivePicker onFileSelect={onVideoSelect} />
               </div>
             </TabsContent>
           </Tabs>
