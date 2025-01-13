@@ -55,7 +55,7 @@ const Login = () => {
                 input: 'auth-input',
               },
             }}
-            providers={[]}
+            providers={["google"]}
             localization={{
               variables: {
                 sign_up: {
