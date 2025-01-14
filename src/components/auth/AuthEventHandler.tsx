@@ -42,7 +42,11 @@ export const AuthEventHandler = () => {
 
       // Handle authentication errors
       if (event === 'SIGNED_IN' && !session) {
-        const error = new AuthApiError("Authentication failed", 403);
+        const error = new AuthApiError(
+          "Authentication failed",
+          403,
+          "AuthenticationError"
+        );
         console.error("Authentication error details:", {
           event,
           session,

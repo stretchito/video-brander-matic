@@ -24,9 +24,6 @@ export const AuthForm = () => {
         },
       }}
       providers={["google"]}
-      onError={(error) => {
-        console.error("Auth UI error:", error);
-      }}
       localization={{
         variables: {
           sign_in: {
