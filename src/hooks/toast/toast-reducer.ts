@@ -1,5 +1,5 @@
 import { State, Action, actionTypes } from './toast-types'
-import { addToRemoveQueue } from './toast-utils'
+import { addToRemoveQueue, TOAST_LIMIT } from './toast-utils'
 
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
