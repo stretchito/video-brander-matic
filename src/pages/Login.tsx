@@ -19,14 +19,21 @@ const Login = () => {
       }
       if (error) {
         console.error("Session check error:", error);
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: error.message
+        });
       }
     };
 
     checkUser();
 
-    // Listen for auth changes
+    // Listen for auth changes with detailed error logging
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth event:", event);
+      console.log("Session:", session);
+      
       if (event === 'SIGNED_IN') {
         console.log("Sign in successful");
         navigate("/");
@@ -43,10 +50,19 @@ const Login = () => {
       if (event === 'PASSWORD_RECOVERY') {
         console.log("Password recovery initiated");
       }
+      // Log any error in the session
+      if (session?.error) {
+        console.error("Session error:", session.error);
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: session.error.message
+        });
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary to-secondary p-6 flex items-center justify-center">
