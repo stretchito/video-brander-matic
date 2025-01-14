@@ -57,7 +57,11 @@ const Login = () => {
 
       // Handle authentication errors
       if (event === 'SIGNED_IN' && !session) {
-        const error = new AuthApiError('Authentication failed', 403);
+        const error = new AuthApiError({
+          message: 'Authentication failed',
+          status: 403,
+          name: 'AuthApiError'
+        });
         console.error("Authentication error:", error);
         toast({
           variant: "destructive",
