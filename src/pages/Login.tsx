@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { AuthError } from "@supabase/supabase-js";
+import { useToast } from "@/hooks/use-toast";
+import { AuthError, Session } from "@supabase/supabase-js";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -55,13 +55,13 @@ const Login = () => {
       }
 
       // Handle any authentication errors
-      if (session?.error) {
-        const authError = session.error as AuthError;
-        console.error("Authentication error:", authError);
+      if (event === 'SIGNED_IN' && !session) {
+        const error = new AuthError('Authentication failed');
+        console.error("Authentication error:", error);
         toast({
           variant: "destructive",
           title: "Authentication Error",
-          description: authError.message
+          description: error.message
         });
       }
     });
