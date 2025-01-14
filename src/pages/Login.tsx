@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { AuthError, Session } from "@supabase/supabase-js";
+import { AuthError, AuthApiError } from "@supabase/supabase-js";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,9 +16,6 @@ const Login = () => {
     const checkUser = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (session) {
-          navigate("/");
-        }
         if (error) {
           console.error("Session check error:", error);
           toast({
@@ -26,6 +23,10 @@ const Login = () => {
             title: "Authentication Error",
             description: error.message
           });
+          return;
+        }
+        if (session) {
+          navigate("/");
         }
       } catch (error) {
         console.error("Session check failed:", error);
@@ -54,14 +55,14 @@ const Login = () => {
         console.log("Password recovery initiated");
       }
 
-      // Handle any authentication errors
+      // Handle authentication errors
       if (event === 'SIGNED_IN' && !session) {
-        const error = new AuthError('Authentication failed');
+        const error = new AuthApiError('Authentication failed', 403);
         console.error("Authentication error:", error);
         toast({
           variant: "destructive",
           title: "Authentication Error",
-          description: error.message
+          description: "Failed to authenticate with Google. Please try again."
         });
       }
     });
