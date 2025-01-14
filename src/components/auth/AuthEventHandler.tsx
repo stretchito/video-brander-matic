@@ -31,7 +31,12 @@ export const AuthEventHandler = () => {
         const errorDescription = urlParams.get('error_description');
 
         if (error) {
-          console.error("OAuth error:", error, errorDescription);
+          console.error("OAuth error details:", {
+            error,
+            errorDescription,
+            fullUrl: window.location.href
+          });
+          
           toast({
             variant: "destructive",
             title: "Authentication Error",
@@ -51,7 +56,9 @@ export const AuthEventHandler = () => {
           event,
           session,
           error: error.message,
-          status: error.status
+          status: error.status,
+          currentUrl: window.location.href,
+          referrer: document.referrer
         });
         
         toast({
