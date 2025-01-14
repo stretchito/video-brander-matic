@@ -14,29 +14,33 @@ const Login = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/");
-      }
-      if (error) {
-        console.error("Session check error:", error);
-        toast({
-          variant: "destructive",
-          title: "Authentication Error",
-          description: error.message
-        });
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (session) {
+          navigate("/");
+        }
+        if (error) {
+          console.error("Session check error:", error);
+          toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: error.message
+          });
+        }
+      } catch (error) {
+        console.error("Session check failed:", error);
       }
     };
 
     checkUser();
 
     // Listen for auth changes with detailed error logging
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state change event:", event);
       console.log("Session state:", session);
       console.log("Full auth state:", { event, session });
       
-      if (event === 'SIGNED_IN') {
+      if (event === 'SIGNED_IN' && session) {
         console.log("Sign in successful");
         navigate("/");
       }
@@ -51,8 +55,8 @@ const Login = () => {
       }
 
       // Handle any authentication errors
-      const authError = (session as any)?.error as AuthError;
-      if (authError) {
+      if (session?.error) {
+        const authError = session.error as AuthError;
         console.error("Authentication error:", authError);
         toast({
           variant: "destructive",
@@ -62,7 +66,9 @@ const Login = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate, toast]);
 
   return (
