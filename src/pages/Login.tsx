@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { AuthError } from "@supabase/supabase-js";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -31,8 +32,9 @@ const Login = () => {
 
     // Listen for auth changes with detailed error logging
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth event:", event);
-      console.log("Session:", session);
+      console.log("Auth state change event:", event);
+      console.log("Session state:", session);
+      console.log("Full auth state:", { event, session });
       
       if (event === 'SIGNED_IN') {
         console.log("Sign in successful");
@@ -44,19 +46,18 @@ const Login = () => {
       if (event === 'USER_UPDATED') {
         console.log("User updated");
       }
-      if (event === 'USER_DELETED') {
-        console.log("User deleted");
-      }
       if (event === 'PASSWORD_RECOVERY') {
         console.log("Password recovery initiated");
       }
-      // Log any error in the session
-      if (session?.error) {
-        console.error("Session error:", session.error);
+
+      // Handle any authentication errors
+      const authError = (session as any)?.error as AuthError;
+      if (authError) {
+        console.error("Authentication error:", authError);
         toast({
           variant: "destructive",
           title: "Authentication Error",
-          description: session.error.message
+          description: authError.message
         });
       }
     });
@@ -91,14 +92,6 @@ const Login = () => {
               },
             }}
             providers={["google"]}
-            onError={(error) => {
-              console.error("Auth error:", error);
-              toast({
-                title: "Authentication Error",
-                description: error.message,
-                variant: "destructive",
-              });
-            }}
             localization={{
               variables: {
                 sign_up: {
