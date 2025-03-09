@@ -1,5 +1,7 @@
+
 import { PositionType } from '@/types/videoProcessing';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const getOverlayPosition = (position: PositionType) => {
   switch (position) {
@@ -23,11 +25,31 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     
     if (configError || !config) {
       console.error('Cloudinary config error:', configError);
+      toast.error('Failed to get Cloudinary configuration');
       throw new Error('Could not fetch Cloudinary configuration');
     }
 
+    if (config.error) {
+      console.error('Cloudinary config returned error:', config.error);
+      toast.error(`Cloudinary configuration error: ${config.error}`);
+      throw new Error(config.error);
+    }
+
+    // Validate that all required config values are present
+    if (!config.cloudName || !config.apiKey || !config.apiSecret) {
+      const missingValues = [];
+      if (!config.cloudName) missingValues.push('Cloud Name');
+      if (!config.apiKey) missingValues.push('API Key');
+      if (!config.apiSecret) missingValues.push('API Secret');
+      
+      const errorMessage = `Missing Cloudinary credentials: ${missingValues.join(', ')}`;
+      console.error(errorMessage);
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+
     const timestamp = Math.round(new Date().getTime() / 1000);
-    const signature = await generateSignature(timestamp);
+    const signature = await generateSignature(timestamp, config);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -43,17 +65,17 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
       fileType: file.type
     });
     
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`;
+    console.log('Upload URL:', uploadUrl);
+
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      body: formData,
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Cloudinary upload error response:', errorText);
+      console.error(`Cloudinary upload error response (${response.status}):`, errorText);
       try {
         const errorJson = JSON.parse(errorText);
         throw new Error(`Upload failed: ${errorJson.error?.message || 'Unknown error'}`);
@@ -71,13 +93,22 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
   }
 };
 
-export const generateSignature = async (timestamp: number, params: Record<string, any> = {}) => {
+export const generateSignature = async (timestamp: number, config?: any, params: Record<string, any> = {}) => {
   try {
-    const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
-    
-    if (configError || !config) {
-      console.error('Signature generation error:', configError);
-      throw new Error('Could not fetch Cloudinary configuration for signature generation');
+    // If config is not provided, fetch it
+    if (!config) {
+      const { data: fetchedConfig, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
+      
+      if (configError || !fetchedConfig) {
+        console.error('Signature generation error:', configError);
+        throw new Error('Could not fetch Cloudinary configuration for signature generation');
+      }
+      
+      config = fetchedConfig;
+    }
+
+    if (!config.apiSecret) {
+      throw new Error('API Secret is required for signature generation');
     }
 
     const allParams = { timestamp, ...params };

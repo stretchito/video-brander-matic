@@ -1,3 +1,4 @@
+
 import { getCloudinaryConfig } from '@/utils/cloudinaryConfig';
 import { PositionType, VideoFormat } from '@/types/videoProcessing';
 import { uploadToCloudinary } from '@/utils/cloudinaryUtils';
@@ -15,7 +16,14 @@ export const useCloudinaryProcessing = () => {
     try {
       // Get Cloudinary configuration
       const config = await getCloudinaryConfig();
+      
+      if (!config || !config.cloudName) {
+        toast.error('Invalid Cloudinary configuration');
+        throw new Error('Invalid Cloudinary configuration');
+      }
+      
       console.log('Starting video processing for:', videoFile.name);
+      console.log('Using Cloudinary cloud name:', config.cloudName);
       
       // Upload logo first
       console.log('Uploading logo...', logoFile.name);
