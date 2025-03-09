@@ -11,9 +11,18 @@ export const getCloudinaryConfig = async () => {
       throw new Error('Could not fetch Cloudinary configuration');
     }
 
+    // Check if we have valid data but with an error field
+    if (config.error) {
+      console.error('Cloudinary config error:', config.error);
+      throw new Error(`Cloudinary config error: ${config.error.details || config.error}`);
+    }
+
     if (!config.cloudName) {
       throw new Error('Cloudinary cloud name is missing from configuration');
     }
+
+    // Log the cloud name so we can see what's happening
+    console.log('Using Cloudinary cloud name:', config.cloudName);
 
     return { 
       cloudName: config.cloudName,

@@ -15,11 +15,12 @@ export const useCloudinaryProcessing = () => {
   ) => {
     try {
       // Get Cloudinary configuration
+      toast.info('Retrieving Cloudinary configuration...');
       const config = await getCloudinaryConfig();
       
       if (!config || !config.cloudName) {
-        toast.error('Invalid Cloudinary configuration');
-        throw new Error('Invalid Cloudinary configuration');
+        toast.error('Invalid Cloudinary configuration: Missing cloud name');
+        throw new Error('Invalid Cloudinary configuration: Missing cloud name');
       }
       
       console.log('Starting video processing for:', videoFile.name);
@@ -27,15 +28,18 @@ export const useCloudinaryProcessing = () => {
       
       // Upload logo first
       console.log('Uploading logo...', logoFile.name);
+      toast.info(`Uploading logo to Cloudinary (${config.cloudName})...`);
       const logoUpload = await uploadToCloudinary(logoFile, 'image');
       console.log('Logo uploaded:', logoUpload);
       
       // Upload video
       console.log('Uploading video...', videoFile.name);
+      toast.info(`Uploading video to Cloudinary (${config.cloudName})...`);
       const videoUpload = await uploadToCloudinary(videoFile, 'video');
       console.log('Video uploaded:', videoUpload);
       
       // Build transformation string using video metadata
+      toast.info('Creating video with logo overlay...');
       const transformationString = buildTransformationString(
         logoUpload.public_id,
         position,
@@ -64,6 +68,7 @@ export const useCloudinaryProcessing = () => {
       const maxRetries = 10;
       let videoReady = false;
 
+      toast.info('Waiting for Cloudinary to process the video...');
       while (!videoReady && retryCount < maxRetries) {
         try {
           console.log(`Attempt ${retryCount + 1}: Checking URL:`, finalVideoUrl);
