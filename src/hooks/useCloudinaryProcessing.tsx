@@ -6,6 +6,18 @@ import { uploadToCloudinary } from '@/utils/cloudinaryUtils';
 import { buildTransformationString, buildCloudinaryUrl } from '@/utils/cloudinaryTransformations';
 import { toast } from 'sonner';
 
+// Define interfaces for Cloudinary response types
+interface CloudinaryUploadResponse {
+  public_id: string;
+  version: number;
+  width: number;
+  height: number;
+  format: string;
+  resource_type: string;
+  url: string;
+  secure_url: string;
+}
+
 export const useCloudinaryProcessing = () => {
   const [logoProgress, setLogoProgress] = useState(0);
   const [videoProgress, setVideoProgress] = useState(0);
@@ -41,7 +53,7 @@ export const useCloudinaryProcessing = () => {
       toast.info(`Uploading logo to Cloudinary (${config.cloudName})...`);
       const logoUpload = await uploadToCloudinary(logoFile, 'image', (progress) => {
         setLogoProgress(progress);
-      });
+      }) as CloudinaryUploadResponse;
       console.log('Logo uploaded:', logoUpload);
       
       // Upload video
@@ -49,7 +61,7 @@ export const useCloudinaryProcessing = () => {
       toast.info(`Uploading video to Cloudinary (${config.cloudName})...`);
       const videoUpload = await uploadToCloudinary(videoFile, 'video', (progress) => {
         setVideoProgress(progress);
-      });
+      }) as CloudinaryUploadResponse;
       console.log('Video uploaded:', videoUpload);
       
       // Build transformation string using video metadata
