@@ -1,8 +1,9 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB (updated from 25MB)
 const MAX_TOTAL_SIZE = 500 * 1024 * 1024; // 500MB
 const MAX_STORAGE_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
 
@@ -15,7 +16,7 @@ export const useStorageCheck = () => {
     // Check individual file sizes
     const oversizedFiles = acceptedFiles.filter(file => file.size > MAX_FILE_SIZE);
     if (oversizedFiles.length > 0) {
-      toast.error(`Some files exceed the 25MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      toast.error(`Some files exceed the 50MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
       return false;
     }
 

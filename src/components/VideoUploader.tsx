@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useDropzone } from 'react-dropzone';
 import FileList from './FileList';
@@ -30,7 +31,7 @@ const VideoUploader = ({ onVideoSelect }: VideoUploaderProps) => {
       'video/*': ['.mp4', '.mov', '.avi', '.webm']
     },
     multiple: true,
-    maxSize: 25 * 1024 * 1024 // 25MB
+    maxSize: 50 * 1024 * 1024 // 50MB (updated from 25MB)
   });
 
   const uploadedFiles = Object.entries(uploadStates).map(([name, state]) => ({
