@@ -23,10 +23,16 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     // Get Cloudinary configuration from Supabase Edge Function
     const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
     
-    if (configError || !config) {
-      console.error('Cloudinary config error:', configError);
+    if (configError) {
+      console.error('Cloudinary config fetch error:', configError);
       toast.error('Failed to get Cloudinary configuration');
-      throw new Error('Could not fetch Cloudinary configuration');
+      throw new Error(`Could not fetch Cloudinary configuration: ${configError.message}`);
+    }
+
+    if (!config) {
+      console.error('No Cloudinary configuration returned');
+      toast.error('No Cloudinary configuration found');
+      throw new Error('No Cloudinary configuration returned');
     }
 
     if (config.error) {
@@ -78,7 +84,7 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
       console.error(`Cloudinary upload error response (${response.status}):`, errorText);
       try {
         const errorJson = JSON.parse(errorText);
-        throw new Error(`Upload failed: ${errorJson.error?.message || 'Unknown error'}`);
+        throw new Error(`Upload failed: ${errorJson.error?.message || errorJson.error || 'Unknown error'}`);
       } catch (e) {
         throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
       }
@@ -89,6 +95,7 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     return result;
   } catch (error) {
     console.error('Cloudinary upload error:', error);
+    toast.error(`Upload failed: ${(error as Error).message}`);
     throw error;
   }
 };
