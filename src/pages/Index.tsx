@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,9 @@ const Index = () => {
     currentAction,
     progress,
     isProcessing,
+    logoProgress,
+    videoProgress,
+    processingProgress,
     setPosition,
     setGreyscale,
     setFormat,
@@ -76,6 +80,9 @@ const Index = () => {
             currentAction={currentAction}
             progress={progress}
             isProcessing={isProcessing}
+            logoProgress={logoProgress}
+            videoProgress={videoProgress}
+            processingProgress={processingProgress}
             onVideoSelect={handleVideoSelect}
             onLogoSelect={handleLogoSelect}
             onPositionChange={handlePositionChange}

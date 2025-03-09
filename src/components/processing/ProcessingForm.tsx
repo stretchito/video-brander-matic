@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,6 +20,9 @@ interface ProcessingFormProps {
   currentAction: string;
   progress: number;
   isProcessing: boolean;
+  logoProgress?: number;
+  videoProgress?: number;
+  processingProgress?: number;
   onVideoSelect: (file: File, path: string) => void;
   onLogoSelect: (file: File, path: string) => void;
   onPositionChange: (position: PositionType) => void;
@@ -38,6 +42,9 @@ const ProcessingForm = ({
   currentAction,
   progress,
   isProcessing,
+  logoProgress = 0,
+  videoProgress = 0,
+  processingProgress = 0,
   onVideoSelect,
   onLogoSelect,
   onPositionChange,
@@ -87,6 +94,11 @@ const ProcessingForm = ({
           status={status}
           currentAction={currentAction}
           progress={progress}
+          totalVideos={videoFiles.length}
+          processedCount={status === 'completed' ? videoFiles.length : 0}
+          logoProgress={logoProgress}
+          videoProgress={videoProgress}
+          processingProgress={processingProgress}
         />
       </div>
     </>

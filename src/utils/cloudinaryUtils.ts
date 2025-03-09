@@ -18,8 +18,15 @@ export const getOverlayPosition = (position: PositionType) => {
   }
 };
 
-export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'image') => {
+export const uploadToCloudinary = async (
+  file: File, 
+  resourceType: 'video' | 'image',
+  onProgress?: (progress: number) => void
+) => {
   try {
+    // Initialize progress
+    onProgress?.(0);
+
     // Get Cloudinary configuration from Supabase Edge Function
     const { data: config, error: configError } = await supabase.functions.invoke('get-cloudinary-config');
     
@@ -54,6 +61,8 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
       throw new Error(errorMessage);
     }
 
+    onProgress?.(10); // Config fetched successfully
+
     const timestamp = Math.round(new Date().getTime() / 1000);
     const signature = await generateSignature(timestamp, config);
 
@@ -74,25 +83,48 @@ export const uploadToCloudinary = async (file: File, resourceType: 'video' | 'im
     const uploadUrl = `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`;
     console.log('Upload URL:', uploadUrl);
 
-    const response = await fetch(uploadUrl, {
-      method: 'POST',
-      body: formData,
+    onProgress?.(20); // Ready to upload
+
+    // Use XMLHttpRequest to track upload progress
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      xhr.open('POST', uploadUrl, true);
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          // Calculate progress percentage from 20-90%
+          const progressPercent = Math.round(20 + (event.loaded / event.total * 70));
+          onProgress?.(progressPercent);
+        }
+      };
+      
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onProgress?.(95); // Upload complete, processing response
+          try {
+            const result = JSON.parse(xhr.responseText);
+            onProgress?.(100); // All done
+            resolve(result);
+          } catch (error) {
+            reject(new Error(`Failed to parse Cloudinary response: ${xhr.responseText}`));
+          }
+        } else {
+          try {
+            const errorResponse = JSON.parse(xhr.responseText);
+            reject(new Error(`Upload failed: ${errorResponse.error?.message || 'Server error'}`));
+          } catch (e) {
+            reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+          }
+        }
+      };
+      
+      xhr.onerror = function() {
+        reject(new Error('Network error during upload'));
+      };
+      
+      xhr.send(formData);
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Cloudinary upload error response (${response.status}):`, errorText);
-      try {
-        const errorJson = JSON.parse(errorText);
-        throw new Error(`Upload failed: ${errorJson.error?.message || errorJson.error || 'Unknown error'}`);
-      } catch (e) {
-        throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
-      }
-    }
-
-    const result = await response.json();
-    console.log('Cloudinary upload success:', result);
-    return result;
   } catch (error) {
     console.error('Cloudinary upload error:', error);
     toast.error(`Upload failed: ${(error as Error).message}`);

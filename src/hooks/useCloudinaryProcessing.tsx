@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { getCloudinaryConfig } from '@/utils/cloudinaryConfig';
 import { PositionType, VideoFormat } from '@/types/videoProcessing';
 import { uploadToCloudinary } from '@/utils/cloudinaryUtils';
@@ -6,6 +7,10 @@ import { buildTransformationString, buildCloudinaryUrl } from '@/utils/cloudinar
 import { toast } from 'sonner';
 
 export const useCloudinaryProcessing = () => {
+  const [logoProgress, setLogoProgress] = useState(0);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [processingProgress, setProcessingProgress] = useState(0);
+
   const processVideo = async (
     videoFile: File,
     logoFile: File,
@@ -14,6 +19,11 @@ export const useCloudinaryProcessing = () => {
     format: VideoFormat
   ) => {
     try {
+      // Reset progress states
+      setLogoProgress(0);
+      setVideoProgress(0);
+      setProcessingProgress(0);
+
       // Get Cloudinary configuration
       toast.info('Retrieving Cloudinary configuration...');
       const config = await getCloudinaryConfig();
@@ -29,17 +39,22 @@ export const useCloudinaryProcessing = () => {
       // Upload logo first
       console.log('Uploading logo...', logoFile.name);
       toast.info(`Uploading logo to Cloudinary (${config.cloudName})...`);
-      const logoUpload = await uploadToCloudinary(logoFile, 'image');
+      const logoUpload = await uploadToCloudinary(logoFile, 'image', (progress) => {
+        setLogoProgress(progress);
+      });
       console.log('Logo uploaded:', logoUpload);
       
       // Upload video
       console.log('Uploading video...', videoFile.name);
       toast.info(`Uploading video to Cloudinary (${config.cloudName})...`);
-      const videoUpload = await uploadToCloudinary(videoFile, 'video');
+      const videoUpload = await uploadToCloudinary(videoFile, 'video', (progress) => {
+        setVideoProgress(progress);
+      });
       console.log('Video uploaded:', videoUpload);
       
       // Build transformation string using video metadata
       toast.info('Creating video with logo overlay...');
+      setProcessingProgress(50);
       const transformationString = buildTransformationString(
         logoUpload.public_id,
         position,
@@ -71,10 +86,12 @@ export const useCloudinaryProcessing = () => {
       toast.info('Waiting for Cloudinary to process the video...');
       while (!videoReady && retryCount < maxRetries) {
         try {
+          setProcessingProgress(50 + Math.min(48, (retryCount * 5)));
           console.log(`Attempt ${retryCount + 1}: Checking URL:`, finalVideoUrl);
           const response = await fetch(finalVideoUrl, { method: 'HEAD' });
           if (response.ok) {
             videoReady = true;
+            setProcessingProgress(100);
             console.log('Video URL verified and accessible');
             console.log('Final working URL:', finalVideoUrl);
           } else {
@@ -108,5 +125,10 @@ export const useCloudinaryProcessing = () => {
     }
   };
 
-  return { processVideo };
+  return { 
+    processVideo,
+    logoProgress,
+    videoProgress,
+    processingProgress
+  };
 };

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useVideoState } from './useVideoState';
@@ -8,7 +9,7 @@ import { useEffect, useState } from 'react';
 export const useVideoProcessing = () => {
   const videoState = useVideoState();
   const processingStatus = useProcessingStatus();
-  const { processVideo } = useCloudinaryProcessing();
+  const { processVideo, logoProgress, videoProgress, processingProgress } = useCloudinaryProcessing();
   const [processedCount, setProcessedCount] = useState(0);
   const [processedUrls, setProcessedUrls] = useState<string[]>([]);
 
@@ -101,6 +102,9 @@ export const useVideoProcessing = () => {
   return {
     ...videoState,
     ...processingStatus,
+    logoProgress,
+    videoProgress,
+    processingProgress,
     processedCount,
     totalVideos: videoState.videoFiles.length,
     handleProcess
